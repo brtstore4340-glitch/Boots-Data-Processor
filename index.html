@@ -3,507 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI System V4 (Table Report)</title>
-    
+    <title>KPI Data Processor</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Excel Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-    <!-- Firebase SDK (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <style>
-        body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: #f0f2f5; color: #334155; }
-        .bg-chrome { background-color: #1a73e8; }
-        .text-chrome { color: #1a73e8; }
-        
-        /* Table Styling */
-        th { font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        td { font-size: 0.875rem; color: #334155; }
-        tr:hover td { background-color: #f8fafc; }
-        
-        .animate-fade { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .chrome-blue { color: #1a73e8; }
+        .bg-chrome-blue { background-color: #1a73e8; }
+        .btn-primary { @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition; }
     </style>
+
+    <!-- Import Map for Firebase (No Bundler Needed) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+          "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
+        }
+      }
+    </script>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- 1. Loading Screen (Auto-hide logic included) -->
-    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
-        <p class="text-gray-500 text-sm font-medium">Connecting to Database...</p>
+    <!-- Loading Overlay -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-gray-500 animate-pulse">Loading system...</p>
     </div>
 
-    <!-- 2. Login Screen -->
-    <div id="login-screen" class="hidden fixed inset-0 bg-gray-100 z-40 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-96 border border-gray-200">
-            <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl font-bold">K</div>
-                <h1 class="text-2xl font-bold text-gray-800">KPI Login</h1>
-                <p class="text-gray-400 text-xs mt-1">Enter your credentials to continue</p>
+    <!-- Login Screen -->
+    <div id="login-screen" class="hidden flex-1 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-xl shadow-xl w-96 border border-gray-100">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">KPI Processor</h1>
+                <p class="text-gray-400 text-sm">Sign in to continue</p>
             </div>
             <form id="login-form" class="space-y-4">
-                <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="admin@kpi.com" required>
-                <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="Password" required>
-                <button type="submit" class="w-full bg-chrome text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">Sign In</button>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-chrome-blue text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                    Login
+                </button>
             </form>
-            <div id="login-error" class="mt-4 text-center text-red-500 text-xs hidden"></div>
         </div>
     </div>
 
-    <!-- 3. Main App Interface -->
+    <!-- Main Application (Hidden by default) -->
     <div id="app-screen" class="hidden flex-1 flex flex-col h-full">
         <!-- Navbar -->
-        <nav class="bg-white shadow-sm border-b border-gray-200 z-10 h-16 shrink-0">
-            <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
-                <div class="flex items-center gap-8">
-                    <div class="flex items-center gap-2 font-bold text-xl text-gray-800">
-                        <span class="text-blue-600">KPI</span> Processor
+        <nav class="bg-white shadow-sm border-b border-gray-200 z-10">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center gap-8">
+                        <span class="text-xl font-bold text-blue-600">KPI System</span>
+                        <div class="hidden md:flex space-x-4">
+                            <button data-page="upload" class="nav-btn text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Upload Files</button>
+                            <button data-page="report" class="nav-btn text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Reports</button>
+                            <button data-page="config" id="nav-config" class="hidden nav-btn text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Config</button>
+                        </div>
                     </div>
-                    <div class="hidden md:flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                        <button onclick="ui.navigateTo('upload')" id="nav-upload" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Upload</button>
-                        <button onclick="ui.navigateTo('report')" id="nav-report" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Report</button>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <p id="user-name" class="text-sm font-medium text-gray-800">User</p>
+                            <p id="user-role" class="text-xs text-gray-500">Role</p>
+                        </div>
+                        <button id="logout-btn" class="text-red-500 hover:text-red-700 text-sm font-medium">Logout</button>
                     </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right hidden sm:block">
-                        <p id="user-email" class="text-xs font-bold text-gray-700">User</p>
-                        <p id="user-role" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full inline-block">Role</p>
-                    </div>
-                    <button onclick="authService.logout()" class="text-gray-400 hover:text-red-500 p-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    </button>
                 </div>
             </div>
         </nav>
 
         <!-- Content Area -->
-        <main id="content-area" class="flex-1 overflow-auto p-4 md:p-8"></main>
+        <main id="content-area" class="flex-1 overflow-auto p-6 bg-gray-50">
+            <!-- Content will be injected here by app.js -->
+            <div class="text-center text-gray-500 mt-20">Select a menu to start</div>
+        </main>
     </div>
 
-<script>
-// --- CONFIGURATION ---
-const firebaseConfig = {
-  apiKey: "AIzaSyCIAnpjvT2k6K-54tGx8MLSzXLXtVQCGDk",
-  authDomain: "daily-report-c7e73.firebaseapp.com",
-  projectId: "daily-report-c7e73",
-  storageBucket: "daily-report-c7e73.firebasestorage.app",
-  messagingSenderId: "784313419402",
-  appId: "1:784313419402:web:4e31ceccb3caaf4c830f73"
-};
+    <!-- External Libraries (SheetJS & JSZip) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-// --- FAILSAFE INIT ---
-// Force login screen if Firebase is slow (e.g. 1.5s)
-const loadTimeout = setTimeout(() => {
-    const loading = document.getElementById('loading-screen');
-    if(!loading.classList.contains('hidden')) {
-        console.log("Force showing login screen due to timeout");
-        loading.classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
-    }
-}, 1500);
-
-try {
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-} catch(e) { console.error(e); }
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// --- DATA SERVICE ---
-const dbService = {
-    cleanNum: (v) => typeof v === 'number' ? v : parseFloat(String(v||0).replace(/,/g,'')) || 0,
-
-    // Save Functions
-    saveDaily: async (store, date, metrics) => {
-        await db.collection('kpi_daily').doc(`${date}_${store}`).set({
-            storeCode: store, date, metrics, updatedAt: new Date()
-        });
-    },
-    saveWeekly: async (store, week, year, metrics) => {
-        await db.collection('kpi_weekly').doc(`${year}_${week}_${store}`).set({
-            storeCode: store, week, year, metrics, updatedAt: new Date()
-        });
-    },
-    saveStoreRecap: async (records) => {
-        const batch = db.batch();
-        records.forEach(r => batch.set(db.collection('store_recap').doc(`${r.saleDateKeyYmd}_${r.storeCode}`), r, {merge:true}));
-        await batch.commit();
-    },
-    saveSaleByDept: async (records) => {
-        const batch = db.batch();
-        records.forEach(r => batch.set(db.collection('sale_by_dept').doc(`${r.saleDateKeyYmd}_${r.storeCode}`), r, {merge:true}));
-        await batch.commit();
-    },
-    saveMaster: async (items) => {
-        const batch = db.batch();
-        let i=0;
-        for(const item of items) {
-            const code = String(item['Itemcode']).split('.')[0];
-            if(!code) continue;
-            batch.set(db.collection('products').doc(code), {
-                itemCode: code, 
-                desc: item['Description'], 
-                price: dbService.cleanNum(item['Reg. Price']),
-                brand: item['Brand']
-            }, {merge:true});
-            i++;
-            if(i%400===0) { await batch.commit(); } // Simple batching
-        }
-        await batch.commit();
-    },
-
-    // Get Report Data (Includes BB & New Member)
-    getReportData: async (store, start, end) => {
-        try {
-            const snap = await db.collection('kpi_daily')
-                .where('storeCode', '==', store)
-                .where('date', '>=', start)
-                .where('date', '<=', end)
-                .get();
-            
-            const data = {};
-            snap.forEach(doc => {
-                const d = doc.data();
-                let tesp=0, tx=0, bb=0, newMem=0;
-                if(d.metrics) d.metrics.forEach(m => {
-                    tesp += (m.tesp||0);
-                    tx += (m.tx !== undefined ? m.tx : (m.qty||0)); // Support old 'qty' field
-                    bb += (m.bb||0);
-                    newMem += (m.newMember||0);
-                });
-                data[d.date] = { tesp, tx, bb, newMem, atv: tx>0 ? tesp/tx : 0 };
-            });
-            return { ok: true, data };
-        } catch(e) {
-            return { ok: false, msg: e.message };
-        }
-    }
-};
-
-// --- FILE PROCESSOR ---
-const processor = {
-    process: async (files, type, pass) => {
-        ui.loading(true, `Processing ${files.length} files...`);
-        let success=0;
-        
-        for(const file of files) {
-            try {
-                const ext = file.name.split('.').pop().toLowerCase();
-                if(ext==='zip') {
-                    const zip = new JSZip();
-                    const content = await zip.loadAsync(file);
-                    for(let name in content.files) {
-                        if(!content.files[name].dir && name.match(/\.(xls|xlsx|csv)$/i)) {
-                            // Filter logic
-                            if(type==='storeRecap' && !name.toLowerCase().startsWith('storerecap4340')) continue;
-                            if(type==='saleByDept' && !name.toLowerCase().startsWith('salebydeptuk4340')) continue;
-                            
-                            const data = await content.files[name].async("arraybuffer");
-                            await processor.excel(new File([data], name), type);
-                        }
-                    }
-                } else {
-                    await processor.excel(file, type);
-                }
-                success++;
-            } catch(e) { console.error(e); }
-        }
-        ui.loading(false);
-        alert(`Processed ${success} files.`);
-        if(success>0 && type !== 'storeMaster') ui.nav('report');
-    },
-
-    excel: async (file, type) => {
-        const ab = await file.arrayBuffer();
-        const wb = XLSX.read(ab, {type:'array'});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        
-        if(type==='daily') await processor.parseDaily(ws, file.name);
-        else if(type==='weekly') await processor.parseWeekly(ws, file.name);
-        else if(type==='storeRecap') {
-            const r = await processor.parseRecap(ws);
-            await dbService.saveStoreRecap(r);
-        }
-        else if(type==='saleByDept') {
-             // Mock for Dept
-             await dbService.saveSaleByDept([{storeCode:'4340', saleDateKeyYmd:'20251115'}]); 
-        }
-        else if(type==='storeMaster') {
-            const json = XLSX.utils.sheet_to_json(ws);
-            await dbService.saveMaster(json);
-        }
-    },
-
-    parseDaily: async (ws, fname) => {
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-        const headIdx = rows.findIndex(r => r && r[4] === 'Key KPI');
-        if(headIdx === -1) return; // Skip invalid
-
-        const store = String(rows[1]?.[1] || '0000').trim();
-        const dateRaw = rows[2]?.[1]; // "Nov 10, 2025"
-        const dateStr = processor.fmtDate(dateRaw);
-
-        // Indices: BB=3, Name=4, TESP=8, NewMem=11, Tx=13
-        const data = [];
-        for(let i=headIdx+1; i<rows.length; i++) {
-            const r = rows[i];
-            if(!r || !r[4]) continue;
-            
-            const tesp = dbService.cleanNum(r[8]);
-            const tx = dbService.cleanNum(r[13]);
-            data.push({
-                kpiName: r[4],
-                bb: dbService.cleanNum(r[3]),
-                tesp: tesp,
-                newMember: dbService.cleanNum(r[11]),
-                tx: tx,
-                atv: tx > 0 ? tesp/tx : 0
-            });
-        }
-        await dbService.saveDaily(store, dateStr, data);
-    },
-
-    parseWeekly: async (ws, fname) => { /* Simplified */ },
-
-    parseRecap: async (ws) => {
-        // Simplified Recap Parsing
-        let dateStr = "2025-11-15"; // Fallback
-        // Logic to find date cell...
-        return [{storeCode:'4340', saleDateKeyYmd: dateStr.replace(/-/g,'')}];
-    },
-
-    fmtDate: (v) => {
-        if(!v) return new Date().toISOString().split('T')[0];
-        const d = new Date(v);
-        return isNaN(d) ? v : d.toISOString().split('T')[0];
-    }
-};
-
-// --- UI CONTROLLER ---
-const ui = {
-    state: { viewDate: new Date('2025-11-01'), reportType: 'daily', mode: 'single' },
-
-    init: () => {
-        auth.onAuthStateChanged(user => {
-            clearTimeout(loadTimeout);
-            document.getElementById('loading-screen').classList.add('hidden');
-            
-            if(user) {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email;
-                ui.nav('upload');
-            } else {
-                document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('app-screen').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('login-form').onsubmit = async (e) => {
-            e.preventDefault();
-            try {
-                await auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value);
-            } catch(e) { alert("Login Failed: " + e.message); }
-        };
-    },
-
-    nav: (page) => {
-        const area = document.getElementById('content-area');
-        area.innerHTML = '';
-        
-        // Active State
-        ['upload','report'].forEach(p => {
-            const btn = document.getElementById(`nav-${p}`);
-            if(p===page) { btn.classList.add('bg-blue-600','text-white'); btn.classList.remove('text-gray-600'); }
-            else { btn.classList.remove('bg-blue-600','text-white'); btn.classList.add('text-gray-600'); }
-        });
-
-        if(page==='upload') ui.renderUpload(area);
-        if(page==='report') ui.renderReport(area);
-    },
-
-    // --- UPLOAD PAGE ---
-    renderUpload: (area) => {
-        const { reportType, mode } = ui.state;
-        const btnCls = (t) => `w-full text-left px-4 py-3 rounded-lg font-medium transition ${reportType===t ? 'bg-blue-600 text-white shadow-lg':'hover:bg-gray-100 text-gray-600'}`;
-
-        area.innerHTML = `
-        <div class="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto animate-fade">
-            <div class="w-full md:w-1/4 space-y-2">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data Type</h3>
-                <button class="${btnCls('daily')}" onclick="ui.setType('daily')">Daily Sale KPI</button>
-                <button class="${btnCls('weekly')}" onclick="ui.setType('weekly')">Weekly Sale KPI</button>
-                <button class="${btnCls('storeRecap')}" onclick="ui.setType('storeRecap')">Store Recap</button>
-                <button class="${btnCls('saleByDept')}" onclick="ui.setType('saleByDept')">Sale By Dept</button>
-                <div class="h-px bg-gray-200 my-2"></div>
-                <button class="${btnCls('storeMaster')}" onclick="ui.setType('storeMaster')">Store Master</button>
-            </div>
-            
-            <div class="w-full md:w-3/4 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Upload ${reportType}</h2>
-                    ${reportType !== 'storeMaster' ? `
-                    <div class="flex bg-gray-50 p-1 rounded-lg">
-                        <button onclick="ui.setMode('single')" class="px-3 py-1 rounded text-sm font-medium transition ${mode==='single'?'bg-white shadow text-blue-600':'text-gray-500'}">Single</button>
-                        <button onclick="ui.setMode('folder')" class="px-3 py-1 rounded text-sm font-medium transition ${mode==='folder'?'bg-white shadow text-blue-600':'text-gray-500'}">Folder</button>
-                    </div>` : ''}
-                </div>
-                
-                <div class="border-2 border-dashed border-gray-300 rounded-xl h-48 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition" onclick="document.getElementById('fInput').click()">
-                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <span class="text-sm">Click to select files</span>
-                </div>
-                <input type="file" id="fInput" class="hidden" ${mode==='folder'?'webkitdirectory directory multiple':''} onchange="ui.doUpload(this)">
-            </div>
-        </div>`;
-    },
-    
-    setType: (t) => { ui.state.reportType = t; ui.nav('upload'); },
-    setMode: (m) => { ui.state.mode = m; ui.nav('upload'); },
-    doUpload: (input) => {
-        if(input.files.length) processor.process(input.files, ui.state.reportType);
-    },
-
-    // --- REPORT PAGE (TABLE VIEW) ---
-    renderReport: async (area) => {
-        const d = ui.state.viewDate;
-        const y = d.getFullYear(), m = d.getMonth();
-        const start = new Date(y, m, 1).toISOString().split('T')[0];
-        const end = new Date(y, m+1, 0).toISOString().split('T')[0];
-        
-        area.innerHTML = `
-        <div class="max-w-6xl mx-auto animate-fade">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <div class="flex items-center gap-4">
-                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-800">${d.toLocaleString('default',{month:'long'})} ${y}</h2>
-                        <p class="text-xs text-gray-500">Daily Performance Report</p>
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="ui.chgMonth(-1)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600">Prev</button>
-                    <button onclick="ui.chgMonth(1)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600">Next</button>
-                </div>
-            </div>
-
-            <!-- Summary Cards -->
-            <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                 <!-- Filled via JS -->
-            </div>
-
-            <!-- Table -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th class="px-6 py-4">Date</th>
-                            <th class="px-6 py-4 text-right text-blue-600">TESP (Act)</th>
-                            <th class="px-6 py-4 text-right">Tx</th>
-                            <th class="px-6 py-4 text-right">ATV</th>
-                            <th class="px-6 py-4 text-right">BB</th>
-                            <th class="px-6 py-4 text-right text-green-600">New Member</th>
-                            <th class="px-6 py-4 text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-gray-100">
-                        <tr><td colspan="7" class="text-center py-8 text-gray-400">Loading Data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>`;
-
-        const res = await dbService.getReportData('4340', start, end);
-        if(!res.ok) {
-            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">Error: ${res.msg}. <br><a href="https://console.firebase.google.com/" target="_blank" class="underline">Check Console for Index Link</a></td></tr>`;
-            return;
-        }
-
-        const data = res.data;
-        const tbody = document.getElementById('table-body');
-        let html = '';
-        
-        // Summary vars
-        let sumTesp=0, sumTx=0, sumNew=0;
-
-        const totalDays = new Date(y, m+1, 0).getDate();
-        
-        for(let i=1; i<=totalDays; i++) {
-            const dateObj = new Date(y, m, i);
-            const dateKey = dateObj.toISOString().split('T')[0];
-            const row = data[dateKey];
-            const dayName = dateObj.toLocaleString('en-us', {weekday:'short'});
-            
-            let tds = `
-                <td class="px-6 py-3 font-medium text-gray-400 text-right">-</td>
-                <td class="px-6 py-3 text-gray-400 text-right">-</td>
-                <td class="px-6 py-3 text-gray-400 text-right">-</td>
-                <td class="px-6 py-3 text-gray-400 text-right">-</td>
-                <td class="px-6 py-3 text-gray-400 text-right">-</td>
-                <td class="px-6 py-3 text-center"><span class="px-2 py-1 bg-gray-100 text-gray-400 text-[10px] rounded uppercase font-bold">Missing</span></td>
-            `;
-
-            if(row) {
-                sumTesp += row.tesp; sumTx += row.tx; sumNew += row.newMem;
-                tds = `
-                <td class="px-6 py-3 text-right font-bold text-gray-700">${row.tesp.toLocaleString()}</td>
-                <td class="px-6 py-3 text-right text-gray-600">${row.tx.toLocaleString()}</td>
-                <td class="px-6 py-3 text-right text-blue-600 font-medium">${row.atv.toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:0})}</td>
-                <td class="px-6 py-3 text-right text-gray-600">${row.bb.toLocaleString()}</td>
-                <td class="px-6 py-3 text-right text-green-600 font-medium">${row.newMem.toLocaleString()}</td>
-                <td class="px-6 py-3 text-center"><span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] rounded uppercase font-bold">Done</span></td>
-                `;
-            }
-
-            html += `<tr>
-                <td class="px-6 py-3 flex items-center gap-3">
-                    <div class="w-8 text-center text-xs font-bold text-gray-400 bg-gray-100 rounded py-1">${dayName}</div>
-                    <span class="text-sm font-medium text-gray-600">${i}</span>
-                </td>
-                ${tds}
-            </tr>`;
-        }
-        tbody.innerHTML = html;
-
-        // Render Cards
-        const avgAtv = sumTx > 0 ? sumTesp/sumTx : 0;
-        const card = (title, val, col) => `
-            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">${title}</p>
-                <p class="text-2xl font-bold ${col}">${val}</p>
-            </div>`;
-        
-        document.getElementById('summary-cards').innerHTML = `
-            ${card('Total Sales', sumTesp.toLocaleString(), 'text-gray-800')}
-            ${card('Total Tx', sumTx.toLocaleString(), 'text-gray-800')}
-            ${card('Avg ATV', avgAtv.toLocaleString(undefined,{maximumFractionDigits:0}), 'text-blue-600')}
-            ${card('New Members', sumNew.toLocaleString(), 'text-green-600')}
-        `;
-    },
-
-    chgMonth: (o) => { ui.state.viewDate.setMonth(ui.state.viewDate.getMonth()+o); ui.nav('report'); },
-    loading: (s,t) => {
-        const el=document.getElementById('loading-screen');
-        if(s) { el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
-    }
-};
-
-const authService = { logout: () => auth.signOut().then(()=>window.location.reload()) };
-
-// Go
-ui.init();
-</script>
+    <!-- App Modules -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
