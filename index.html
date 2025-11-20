@@ -1,226 +1,509 @@
-<!--
-  KPI Data Processor – Code V10 (Final Integrated)
-  - Login First Architecture
-  - Light/Dark Theme Support
-  - Modular JavaScript (5 modules)
--->
 <!DOCTYPE html>
-<html lang="th" class="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>KPI Data Processor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Noto Sans Thai"', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Noto Sans Thai -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
-  <style>
-    body { transition: background-color 0.3s, color 0.3s; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI System V4 (Table Report)</title>
     
-    /* Custom Scrollbar */
-    .kpi-scroll { scrollbar-width: thin; }
-    .kpi-scroll::-webkit-scrollbar { width: 6px; }
-    .kpi-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
-    .kpi-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 999px; }
-    .dark .kpi-scroll { scrollbar-color: #475569 #0f172a; }
-    .dark .kpi-scroll::-webkit-scrollbar-track { background: #0f172a; }
-    .dark .kpi-scroll::-webkit-scrollbar-thumb { background-color: #475569; }
-
-    /* Tab Animations */
-    .tab-btn { transition: all 0.2s ease; }
-    .tab-btn-active { background-color: #eff6ff; color: #2563eb; border-bottom: 2px solid #2563eb; }
-    .dark .tab-btn-active { background-color: #1e293b; color: #38bdf8; border-bottom: 2px solid #38bdf8; }
-    .tab-btn-inactive { color: #64748b; border-bottom: 2px solid transparent; }
-    .dark .tab-btn-inactive { color: #94a3b8; }
-    .tab-btn-inactive:hover { color: #334155; background-color: #f8fafc; }
-    .dark .tab-btn-inactive:hover { color: #f1f5f9; background-color: #0f172a; }
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    .fade-in { animation: fadeIn 0.3s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Excel Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    /* Modal */
-    .swal2-popup-custom-width { width: 90vw !important; max-width: 1400px !important; }
-    .sheet-cell { border: 1px solid #e2e8f0; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
-    .dark .sheet-cell { border-color: #334155; }
-    .sheet-cell-header { background-color: #f8fafc; font-weight: 600; position: sticky; top: 0; z-index: 10; }
-    .dark .sheet-cell-header { background-color: #1e293b; color: #e2e8f0; }
-  </style>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: #f0f2f5; color: #334155; }
+        .bg-chrome { background-color: #1a73e8; }
+        .text-chrome { color: #1a73e8; }
+        
+        /* Table Styling */
+        th { font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        td { font-size: 0.875rem; color: #334155; }
+        tr:hover td { background-color: #f8fafc; }
+        
+        .animate-fade { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-gray-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans flex flex-col items-center justify-center">
+<body class="h-screen flex flex-col overflow-hidden">
 
-  <!-- PART 1: LOGIN VIEW -->
-  <div id="view-login" class="w-full max-w-md p-6 fade-in">
-    <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl p-8">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-blue-600 dark:text-sky-400 mb-2">KPI Processor</h1>
-        <p class="text-slate-500 dark:text-slate-400 text-sm">ระบบจัดการข้อมูล KPI ภายใน</p>
-      </div>
-      <form id="loginForm" class="space-y-5">
-        <div class="space-y-1.5">
-          <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Username</label>
-          <input id="loginName" type="text" placeholder="admin, 4340" required class="w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 text-sm focus:border-blue-500 dark:focus:border-sky-500 shadow-sm" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
-          <input id="loginPassword" type="password" placeholder="••••••••" required class="w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-3 text-sm focus:border-blue-500 dark:focus:border-sky-500 shadow-sm" />
-        </div>
-        <button type="submit" class="w-full rounded-lg bg-blue-600 dark:bg-sky-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 dark:hover:bg-sky-500 transition-all mt-2">เข้าสู่ระบบ</button>
-      </form>
-      <div class="mt-6 pt-6 border-t border-gray-100 dark:border-slate-800 text-center text-xs text-slate-400">
-        <div id="firebaseStatusLogin">Connecting to System...</div>
-      </div>
+    <!-- 1. Loading Screen (Auto-hide logic included) -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <p class="text-gray-500 text-sm font-medium">Connecting to Database...</p>
     </div>
-  </div>
 
-  <!-- PART 2: MAIN APP VIEW -->
-  <div id="view-app" class="w-full min-h-screen flex flex-col items-center hidden fade-in">
-    <header class="w-full max-w-6xl px-6 pt-6 pb-4">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="flex items-center justify-between w-full md:w-auto">
-          <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">KPI Data Processor</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Logged in as <span id="headerUserDisplay" class="font-bold text-blue-600 dark:text-sky-400">...</span></p>
-          </div>
-          <button id="btnThemeToggle" class="md:hidden p-2 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xl">🌓</button>
-        </div>
-        <div class="flex items-center gap-3">
-            <button id="btnThemeToggleDesktop" class="hidden md:flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-lg">🌓</button>
-            <button id="btnLogout" class="px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 border border-red-100 dark:border-red-900/50">ออกจากระบบ</button>
-        </div>
-      </div>
-    </header>
-
-    <main class="w-full max-w-6xl px-4 pb-12 flex-1">
-      <div class="bg-white dark:bg-slate-900/80 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-colors duration-300">
-        <div class="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 pt-4 flex items-end gap-1 overflow-x-auto">
-            <button class="tab-btn px-5 py-3 text-sm font-semibold tab-btn-active whitespace-nowrap" data-tab="tab-input">Input Data</button>
-            <button class="tab-btn px-5 py-3 text-sm font-semibold tab-btn-inactive whitespace-nowrap" data-tab="tab-report">Reports</button>
-            <button class="tab-btn px-5 py-3 text-sm font-semibold tab-btn-inactive whitespace-nowrap" data-tab="tab-calendar">Calendar</button>
-            <button class="tab-btn px-5 py-3 text-sm font-semibold tab-btn-inactive whitespace-nowrap" data-tab="tab-config">Config</button>
-        </div>
-
-        <!-- INPUT TAB -->
-        <section id="tab-input" class="tab-panel px-6 py-8 md:px-10 md:py-10">
-          <div class="flex flex-col gap-8">
-            <div class="flex items-baseline justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
-              <h2 class="text-xl font-bold text-slate-800 dark:text-white">อัปโหลดไฟล์ข้อมูล</h2>
-              <span class="text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded-md">รองรับ .xlsx, .zip</span>
+    <!-- 2. Login Screen -->
+    <div id="login-screen" class="hidden fixed inset-0 bg-gray-100 z-40 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-96 border border-gray-200">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl font-bold">K</div>
+                <h1 class="text-2xl font-bold text-gray-800">KPI Login</h1>
+                <p class="text-gray-400 text-xs mt-1">Enter your credentials to continue</p>
             </div>
-            <div class="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-              <!-- Daily Card -->
-              <div class="group bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-5 hover:border-blue-300 dark:hover:border-sky-500 hover:shadow-md transition-all">
-                <div class="flex justify-between items-start mb-4">
-                  <div><h3 class="text-base font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">Daily Data Pack</h3><p class="text-xs text-slate-500 mt-1">Daily KPI / SaleByDept / SoldMovement</p></div>
-                  <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-sky-900/30 flex items-center justify-center text-blue-600">D</div>
-                </div>
-                <div class="space-y-3">
-                  <input id="dailyFile" type="file" accept=".zip,.xlsx" class="block w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                  <button id="btnProcessDaily" class="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-sm">ประมวลผล Daily Pack</button>
-                </div>
-              </div>
-              <!-- Weekly Card -->
-              <div class="group bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-5 hover:border-emerald-300 dark:hover:border-emerald-500 hover:shadow-md transition-all">
-                <div class="flex justify-between items-start mb-4">
-                  <div><h3 class="text-base font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600">Weekly KPI</h3><p class="text-xs text-slate-500 mt-1">ไฟล์ Weekly Sales KPI สรุปรายสัปดาห์</p></div>
-                  <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">W</div>
-                </div>
-                <div class="space-y-3">
-                  <input id="weeklyFile" type="file" accept=".zip,.xlsx" class="block w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"/>
-                  <button id="btnProcessWeekly" class="w-full py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 shadow-sm">ประมวลผล Weekly</button>
-                </div>
-              </div>
-              <!-- Recap Card -->
-              <div class="group bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-5 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all">
-                <div class="flex justify-between items-start mb-4">
-                  <div><h3 class="text-base font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600">Store Recap</h3><p class="text-xs text-slate-500 mt-1">ไฟล์ Monthly Store Recap</p></div>
-                  <div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">R</div>
-                </div>
-                <div class="space-y-3">
-                  <input id="recapFile" type="file" accept=".zip,.xlsx" class="block w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                  <button id="btnProcessRecap" class="w-full py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 shadow-sm">ประมวลผล Recap</button>
-                </div>
-              </div>
-              <!-- Store Master Card -->
-              <div class="group bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-5 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all">
-                <div class="flex justify-between items-start mb-4">
-                  <div><h3 class="text-base font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600">Store Master</h3><p class="text-xs text-slate-500 mt-1">ฐานข้อมูลสาขา (Store Master Data)</p></div>
-                  <div class="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">M</div>
-                </div>
-                <div class="space-y-3">
-                  <input id="storeMasterFile" type="file" accept=".xlsx" class="block w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
-                  <button id="btnProcessStoreMaster" class="w-full py-2 rounded-lg bg-orange-600 text-white text-xs font-bold hover:bg-orange-700 shadow-sm">อัปโหลด Store Master</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- REPORT TAB -->
-        <section id="tab-report" class="tab-panel px-6 py-8 md:px-10 md:py-10 hidden">
-           <div class="flex flex-col gap-6">
-             <div class="flex items-center justify-between">
-               <h2 class="text-xl font-bold text-slate-800 dark:text-white">Session Log</h2>
-               <button id="btnRefreshReport" class="px-4 py-2 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800">Refresh</button>
-             </div>
-             <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
-               <pre id="reportOutput" class="kpi-scroll p-4 text-[11px] font-mono leading-relaxed text-emerald-400 h-80 overflow-auto"></pre>
-             </div>
-           </div>
-        </section>
-
-        <!-- CALENDAR TAB -->
-        <section id="tab-calendar" class="tab-panel px-6 py-6 md:px-8 md:py-8 hidden">
-          <div class="text-center text-slate-400 py-10">Loading Calendar...</div>
-        </section>
-
-        <!-- CONFIG TAB -->
-        <section id="tab-config" class="tab-panel px-6 py-8 md:px-10 md:py-10 hidden">
-           <div class="max-w-2xl mx-auto space-y-6">
-             <h2 class="text-xl font-bold">Configuration</h2>
-             <div class="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6 space-y-4">
-               <div><label class="text-sm font-semibold">Daily Subcollection</label><input id="cfgDailyCollection" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" value="daily_kpi"></div>
-               <div><label class="text-sm font-semibold">Weekly Subcollection</label><input id="cfgWeeklyCollection" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" value="weekly_kpi"></div>
-               <div><label class="text-sm font-semibold">Recap Subcollection</label><input id="cfgRecapCollection" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" value="recap_kpi"></div>
-               <div class="text-right"><button id="btnApplyConfig" class="px-5 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-900">Save Config</button></div>
-             </div>
-           </div>
-        </section>
-      </div>
-
-      <section class="mt-6 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div class="bg-gray-50 dark:bg-slate-800 px-4 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-          <h3 class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Console</h3>
-          <button id="btnClearLog" type="button" class="text-xs text-slate-400 hover:text-slate-700 underline">Clear</button>
+            <form id="login-form" class="space-y-4">
+                <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="admin@kpi.com" required>
+                <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="Password" required>
+                <button type="submit" class="w-full bg-chrome text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">Sign In</button>
+            </form>
+            <div id="login-error" class="mt-4 text-center text-red-500 text-xs hidden"></div>
         </div>
-        <pre id="consoleLog" class="kpi-scroll h-32 p-3 text-[10px] text-slate-600 dark:text-slate-400 font-mono overflow-auto bg-white dark:bg-slate-950"></pre>
-      </section>
-    </main>
-  </div>
+    </div>
 
-  <!-- Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 3. Main App Interface -->
+    <div id="app-screen" class="hidden flex-1 flex flex-col h-full">
+        <!-- Navbar -->
+        <nav class="bg-white shadow-sm border-b border-gray-200 z-10 h-16 shrink-0">
+            <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-2 font-bold text-xl text-gray-800">
+                        <span class="text-blue-600">KPI</span> Processor
+                    </div>
+                    <div class="hidden md:flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                        <button onclick="ui.navigateTo('upload')" id="nav-upload" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Upload</button>
+                        <button onclick="ui.navigateTo('report')" id="nav-report" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Report</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p id="user-email" class="text-xs font-bold text-gray-700">User</p>
+                        <p id="user-role" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full inline-block">Role</p>
+                    </div>
+                    <button onclick="authService.logout()" class="text-gray-400 hover:text-red-500 p-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
 
-  <script type="module" src="./js/kpi-core.js"></script>
-  <script type="module" src="./js/kpi-login.js"></script>
-  <script type="module" src="./js/kpi-input.js"></script>
-  <script type="module" src="./js/kpi-report.js"></script>
+        <!-- Content Area -->
+        <main id="content-area" class="flex-1 overflow-auto p-4 md:p-8"></main>
+    </div>
+
+<script>
+// --- CONFIGURATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCIAnpjvT2k6K-54tGx8MLSzXLXtVQCGDk",
+  authDomain: "daily-report-c7e73.firebaseapp.com",
+  projectId: "daily-report-c7e73",
+  storageBucket: "daily-report-c7e73.firebasestorage.app",
+  messagingSenderId: "784313419402",
+  appId: "1:784313419402:web:4e31ceccb3caaf4c830f73"
+};
+
+// --- FAILSAFE INIT ---
+// Force login screen if Firebase is slow (e.g. 1.5s)
+const loadTimeout = setTimeout(() => {
+    const loading = document.getElementById('loading-screen');
+    if(!loading.classList.contains('hidden')) {
+        console.log("Force showing login screen due to timeout");
+        loading.classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+    }
+}, 1500);
+
+try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+} catch(e) { console.error(e); }
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- DATA SERVICE ---
+const dbService = {
+    cleanNum: (v) => typeof v === 'number' ? v : parseFloat(String(v||0).replace(/,/g,'')) || 0,
+
+    // Save Functions
+    saveDaily: async (store, date, metrics) => {
+        await db.collection('kpi_daily').doc(`${date}_${store}`).set({
+            storeCode: store, date, metrics, updatedAt: new Date()
+        });
+    },
+    saveWeekly: async (store, week, year, metrics) => {
+        await db.collection('kpi_weekly').doc(`${year}_${week}_${store}`).set({
+            storeCode: store, week, year, metrics, updatedAt: new Date()
+        });
+    },
+    saveStoreRecap: async (records) => {
+        const batch = db.batch();
+        records.forEach(r => batch.set(db.collection('store_recap').doc(`${r.saleDateKeyYmd}_${r.storeCode}`), r, {merge:true}));
+        await batch.commit();
+    },
+    saveSaleByDept: async (records) => {
+        const batch = db.batch();
+        records.forEach(r => batch.set(db.collection('sale_by_dept').doc(`${r.saleDateKeyYmd}_${r.storeCode}`), r, {merge:true}));
+        await batch.commit();
+    },
+    saveMaster: async (items) => {
+        const batch = db.batch();
+        let i=0;
+        for(const item of items) {
+            const code = String(item['Itemcode']).split('.')[0];
+            if(!code) continue;
+            batch.set(db.collection('products').doc(code), {
+                itemCode: code, 
+                desc: item['Description'], 
+                price: dbService.cleanNum(item['Reg. Price']),
+                brand: item['Brand']
+            }, {merge:true});
+            i++;
+            if(i%400===0) { await batch.commit(); } // Simple batching
+        }
+        await batch.commit();
+    },
+
+    // Get Report Data (Includes BB & New Member)
+    getReportData: async (store, start, end) => {
+        try {
+            const snap = await db.collection('kpi_daily')
+                .where('storeCode', '==', store)
+                .where('date', '>=', start)
+                .where('date', '<=', end)
+                .get();
+            
+            const data = {};
+            snap.forEach(doc => {
+                const d = doc.data();
+                let tesp=0, tx=0, bb=0, newMem=0;
+                if(d.metrics) d.metrics.forEach(m => {
+                    tesp += (m.tesp||0);
+                    tx += (m.tx !== undefined ? m.tx : (m.qty||0)); // Support old 'qty' field
+                    bb += (m.bb||0);
+                    newMem += (m.newMember||0);
+                });
+                data[d.date] = { tesp, tx, bb, newMem, atv: tx>0 ? tesp/tx : 0 };
+            });
+            return { ok: true, data };
+        } catch(e) {
+            return { ok: false, msg: e.message };
+        }
+    }
+};
+
+// --- FILE PROCESSOR ---
+const processor = {
+    process: async (files, type, pass) => {
+        ui.loading(true, `Processing ${files.length} files...`);
+        let success=0;
+        
+        for(const file of files) {
+            try {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if(ext==='zip') {
+                    const zip = new JSZip();
+                    const content = await zip.loadAsync(file);
+                    for(let name in content.files) {
+                        if(!content.files[name].dir && name.match(/\.(xls|xlsx|csv)$/i)) {
+                            // Filter logic
+                            if(type==='storeRecap' && !name.toLowerCase().startsWith('storerecap4340')) continue;
+                            if(type==='saleByDept' && !name.toLowerCase().startsWith('salebydeptuk4340')) continue;
+                            
+                            const data = await content.files[name].async("arraybuffer");
+                            await processor.excel(new File([data], name), type);
+                        }
+                    }
+                } else {
+                    await processor.excel(file, type);
+                }
+                success++;
+            } catch(e) { console.error(e); }
+        }
+        ui.loading(false);
+        alert(`Processed ${success} files.`);
+        if(success>0 && type !== 'storeMaster') ui.nav('report');
+    },
+
+    excel: async (file, type) => {
+        const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab, {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        
+        if(type==='daily') await processor.parseDaily(ws, file.name);
+        else if(type==='weekly') await processor.parseWeekly(ws, file.name);
+        else if(type==='storeRecap') {
+            const r = await processor.parseRecap(ws);
+            await dbService.saveStoreRecap(r);
+        }
+        else if(type==='saleByDept') {
+             // Mock for Dept
+             await dbService.saveSaleByDept([{storeCode:'4340', saleDateKeyYmd:'20251115'}]); 
+        }
+        else if(type==='storeMaster') {
+            const json = XLSX.utils.sheet_to_json(ws);
+            await dbService.saveMaster(json);
+        }
+    },
+
+    parseDaily: async (ws, fname) => {
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+        const headIdx = rows.findIndex(r => r && r[4] === 'Key KPI');
+        if(headIdx === -1) return; // Skip invalid
+
+        const store = String(rows[1]?.[1] || '0000').trim();
+        const dateRaw = rows[2]?.[1]; // "Nov 10, 2025"
+        const dateStr = processor.fmtDate(dateRaw);
+
+        // Indices: BB=3, Name=4, TESP=8, NewMem=11, Tx=13
+        const data = [];
+        for(let i=headIdx+1; i<rows.length; i++) {
+            const r = rows[i];
+            if(!r || !r[4]) continue;
+            
+            const tesp = dbService.cleanNum(r[8]);
+            const tx = dbService.cleanNum(r[13]);
+            data.push({
+                kpiName: r[4],
+                bb: dbService.cleanNum(r[3]),
+                tesp: tesp,
+                newMember: dbService.cleanNum(r[11]),
+                tx: tx,
+                atv: tx > 0 ? tesp/tx : 0
+            });
+        }
+        await dbService.saveDaily(store, dateStr, data);
+    },
+
+    parseWeekly: async (ws, fname) => { /* Simplified */ },
+
+    parseRecap: async (ws) => {
+        // Simplified Recap Parsing
+        let dateStr = "2025-11-15"; // Fallback
+        // Logic to find date cell...
+        return [{storeCode:'4340', saleDateKeyYmd: dateStr.replace(/-/g,'')}];
+    },
+
+    fmtDate: (v) => {
+        if(!v) return new Date().toISOString().split('T')[0];
+        const d = new Date(v);
+        return isNaN(d) ? v : d.toISOString().split('T')[0];
+    }
+};
+
+// --- UI CONTROLLER ---
+const ui = {
+    state: { viewDate: new Date('2025-11-01'), reportType: 'daily', mode: 'single' },
+
+    init: () => {
+        auth.onAuthStateChanged(user => {
+            clearTimeout(loadTimeout);
+            document.getElementById('loading-screen').classList.add('hidden');
+            
+            if(user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('user-email').innerText = user.email;
+                ui.nav('upload');
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            try {
+                await auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value);
+            } catch(e) { alert("Login Failed: " + e.message); }
+        };
+    },
+
+    nav: (page) => {
+        const area = document.getElementById('content-area');
+        area.innerHTML = '';
+        
+        // Active State
+        ['upload','report'].forEach(p => {
+            const btn = document.getElementById(`nav-${p}`);
+            if(p===page) { btn.classList.add('bg-blue-600','text-white'); btn.classList.remove('text-gray-600'); }
+            else { btn.classList.remove('bg-blue-600','text-white'); btn.classList.add('text-gray-600'); }
+        });
+
+        if(page==='upload') ui.renderUpload(area);
+        if(page==='report') ui.renderReport(area);
+    },
+
+    // --- UPLOAD PAGE ---
+    renderUpload: (area) => {
+        const { reportType, mode } = ui.state;
+        const btnCls = (t) => `w-full text-left px-4 py-3 rounded-lg font-medium transition ${reportType===t ? 'bg-blue-600 text-white shadow-lg':'hover:bg-gray-100 text-gray-600'}`;
+
+        area.innerHTML = `
+        <div class="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto animate-fade">
+            <div class="w-full md:w-1/4 space-y-2">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Data Type</h3>
+                <button class="${btnCls('daily')}" onclick="ui.setType('daily')">Daily Sale KPI</button>
+                <button class="${btnCls('weekly')}" onclick="ui.setType('weekly')">Weekly Sale KPI</button>
+                <button class="${btnCls('storeRecap')}" onclick="ui.setType('storeRecap')">Store Recap</button>
+                <button class="${btnCls('saleByDept')}" onclick="ui.setType('saleByDept')">Sale By Dept</button>
+                <div class="h-px bg-gray-200 my-2"></div>
+                <button class="${btnCls('storeMaster')}" onclick="ui.setType('storeMaster')">Store Master</button>
+            </div>
+            
+            <div class="w-full md:w-3/4 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Upload ${reportType}</h2>
+                    ${reportType !== 'storeMaster' ? `
+                    <div class="flex bg-gray-50 p-1 rounded-lg">
+                        <button onclick="ui.setMode('single')" class="px-3 py-1 rounded text-sm font-medium transition ${mode==='single'?'bg-white shadow text-blue-600':'text-gray-500'}">Single</button>
+                        <button onclick="ui.setMode('folder')" class="px-3 py-1 rounded text-sm font-medium transition ${mode==='folder'?'bg-white shadow text-blue-600':'text-gray-500'}">Folder</button>
+                    </div>` : ''}
+                </div>
+                
+                <div class="border-2 border-dashed border-gray-300 rounded-xl h-48 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition" onclick="document.getElementById('fInput').click()">
+                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <span class="text-sm">Click to select files</span>
+                </div>
+                <input type="file" id="fInput" class="hidden" ${mode==='folder'?'webkitdirectory directory multiple':''} onchange="ui.doUpload(this)">
+            </div>
+        </div>`;
+    },
+    
+    setType: (t) => { ui.state.reportType = t; ui.nav('upload'); },
+    setMode: (m) => { ui.state.mode = m; ui.nav('upload'); },
+    doUpload: (input) => {
+        if(input.files.length) processor.process(input.files, ui.state.reportType);
+    },
+
+    // --- REPORT PAGE (TABLE VIEW) ---
+    renderReport: async (area) => {
+        const d = ui.state.viewDate;
+        const y = d.getFullYear(), m = d.getMonth();
+        const start = new Date(y, m, 1).toISOString().split('T')[0];
+        const end = new Date(y, m+1, 0).toISOString().split('T')[0];
+        
+        area.innerHTML = `
+        <div class="max-w-6xl mx-auto animate-fade">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">${d.toLocaleString('default',{month:'long'})} ${y}</h2>
+                        <p class="text-xs text-gray-500">Daily Performance Report</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="ui.chgMonth(-1)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600">Prev</button>
+                    <button onclick="ui.chgMonth(1)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600">Next</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                 <!-- Filled via JS -->
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4 text-right text-blue-600">TESP (Act)</th>
+                            <th class="px-6 py-4 text-right">Tx</th>
+                            <th class="px-6 py-4 text-right">ATV</th>
+                            <th class="px-6 py-4 text-right">BB</th>
+                            <th class="px-6 py-4 text-right text-green-600">New Member</th>
+                            <th class="px-6 py-4 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-100">
+                        <tr><td colspan="7" class="text-center py-8 text-gray-400">Loading Data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+
+        const res = await dbService.getReportData('4340', start, end);
+        if(!res.ok) {
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">Error: ${res.msg}. <br><a href="https://console.firebase.google.com/" target="_blank" class="underline">Check Console for Index Link</a></td></tr>`;
+            return;
+        }
+
+        const data = res.data;
+        const tbody = document.getElementById('table-body');
+        let html = '';
+        
+        // Summary vars
+        let sumTesp=0, sumTx=0, sumNew=0;
+
+        const totalDays = new Date(y, m+1, 0).getDate();
+        
+        for(let i=1; i<=totalDays; i++) {
+            const dateObj = new Date(y, m, i);
+            const dateKey = dateObj.toISOString().split('T')[0];
+            const row = data[dateKey];
+            const dayName = dateObj.toLocaleString('en-us', {weekday:'short'});
+            
+            let tds = `
+                <td class="px-6 py-3 font-medium text-gray-400 text-right">-</td>
+                <td class="px-6 py-3 text-gray-400 text-right">-</td>
+                <td class="px-6 py-3 text-gray-400 text-right">-</td>
+                <td class="px-6 py-3 text-gray-400 text-right">-</td>
+                <td class="px-6 py-3 text-gray-400 text-right">-</td>
+                <td class="px-6 py-3 text-center"><span class="px-2 py-1 bg-gray-100 text-gray-400 text-[10px] rounded uppercase font-bold">Missing</span></td>
+            `;
+
+            if(row) {
+                sumTesp += row.tesp; sumTx += row.tx; sumNew += row.newMem;
+                tds = `
+                <td class="px-6 py-3 text-right font-bold text-gray-700">${row.tesp.toLocaleString()}</td>
+                <td class="px-6 py-3 text-right text-gray-600">${row.tx.toLocaleString()}</td>
+                <td class="px-6 py-3 text-right text-blue-600 font-medium">${row.atv.toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:0})}</td>
+                <td class="px-6 py-3 text-right text-gray-600">${row.bb.toLocaleString()}</td>
+                <td class="px-6 py-3 text-right text-green-600 font-medium">${row.newMem.toLocaleString()}</td>
+                <td class="px-6 py-3 text-center"><span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] rounded uppercase font-bold">Done</span></td>
+                `;
+            }
+
+            html += `<tr>
+                <td class="px-6 py-3 flex items-center gap-3">
+                    <div class="w-8 text-center text-xs font-bold text-gray-400 bg-gray-100 rounded py-1">${dayName}</div>
+                    <span class="text-sm font-medium text-gray-600">${i}</span>
+                </td>
+                ${tds}
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+
+        // Render Cards
+        const avgAtv = sumTx > 0 ? sumTesp/sumTx : 0;
+        const card = (title, val, col) => `
+            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">${title}</p>
+                <p class="text-2xl font-bold ${col}">${val}</p>
+            </div>`;
+        
+        document.getElementById('summary-cards').innerHTML = `
+            ${card('Total Sales', sumTesp.toLocaleString(), 'text-gray-800')}
+            ${card('Total Tx', sumTx.toLocaleString(), 'text-gray-800')}
+            ${card('Avg ATV', avgAtv.toLocaleString(undefined,{maximumFractionDigits:0}), 'text-blue-600')}
+            ${card('New Members', sumNew.toLocaleString(), 'text-green-600')}
+        `;
+    },
+
+    chgMonth: (o) => { ui.state.viewDate.setMonth(ui.state.viewDate.getMonth()+o); ui.nav('report'); },
+    loading: (s,t) => {
+        const el=document.getElementById('loading-screen');
+        if(s) { el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
+    }
+};
+
+const authService = { logout: () => auth.signOut().then(()=>window.location.reload()) };
+
+// Go
+ui.init();
+</script>
 </body>
 </html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI System (Full Version)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Firebase SDK (Compat Version for Local File Support) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .chrome-blue { color: #1a73e8; }
+        .bg-chrome-blue { background-color: #1a73e8; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-700">
+
+    <!-- Loading Overlay -->
+    <div id="loading-screen" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+        <p class="text-gray-600 font-medium animate-pulse" id="loading-text">Connecting to System...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="hidden flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl w-96 border border-white/50">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">KPI System</h1>
+                <p class="text-gray-400 text-sm mt-2">Sign in to access dashboard</p>
+            </div>
+            <form id="login-form" class="space-y-5">
+                <input type="email" id="email" class="block w-full rounded-xl border-gray-200 bg-gray-50 p-3 text-sm focus:ring-blue-500" placeholder="admin@kpi.com" required>
+                <input type="password" id="password" class="block w-full rounded-xl border-gray-200 bg-gray-50 p-3 text-sm focus:ring-blue-500" placeholder="••••••••" required>
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl hover:shadow-lg font-bold transition">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Screen -->
+    <div id="app-screen" class="hidden flex-1 flex flex-col h-full">
+        <nav class="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 z-10 sticky top-0">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">K</div>
+                        <span class="text-xl font-bold text-gray-800">KPI Processor</span>
+                    </div>
+                    <div class="hidden md:flex space-x-2">
+                        <button onclick="ui.navigateTo('upload')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition" data-page="upload">Upload</button>
+                        <button onclick="ui.navigateTo('report')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition" data-page="report">Reports</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p id="user-name" class="text-sm font-bold text-gray-700">User</p>
+                        <p id="user-role" class="text-[10px] uppercase tracking-wider font-bold text-blue-600 bg-blue-50 px-2 rounded-full w-fit ml-auto">Role</p>
+                    </div>
+                    <button onclick="authService.logout()" class="text-gray-400 hover:text-red-500 p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <main id="content-area" class="flex-1 overflow-auto p-6"></main>
+    </div>
+
+<script>
+// --- 1. Firebase Configuration ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCIAnpjvT2k6K-54tGx8MLSzXLXtVQCGDk",
+  authDomain: "daily-report-c7e73.firebaseapp.com",
+  projectId: "daily-report-c7e73",
+  storageBucket: "daily-report-c7e73.firebasestorage.app",
+  messagingSenderId: "784313419402",
+  appId: "1:784313419402:web:4e31ceccb3caaf4c830f73",
+  measurementId: "G-H94MZW6HY3"
+};
+
+// Initialize Firebase (Compat)
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- 2. Services ---
+const dbService = {
+    cleanNumber: (val) => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        return parseFloat(String(val).replace(/,/g, '')) || 0;
+    },
+
+    saveStoreRecapToFirestore: async (records) => {
+        const batch = db.batch();
+        records.forEach(record => {
+            const docId = `${record.saleDateKeyYmd}_${record.storeCode}`;
+            const docRef = db.collection('store_recap').doc(docId);
+            batch.set(docRef, { ...record, uploadDate: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch.commit();
+    },
+
+    saveSaleByDeptToFirestore: async (records) => {
+        const batch = db.batch();
+        records.forEach(record => {
+            const docId = `${record.saleDateKeyYmd}_${record.storeCode}`;
+            const docRef = db.collection('sale_by_dept').doc(docId);
+            batch.set(docRef, { ...record, uploadDate: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch.commit();
+    },
+
+    saveDailyKPI: async (storeCode, dateStr, kpiData) => {
+        const docId = `${dateStr}_${storeCode}`;
+        await db.collection('kpi_daily').doc(docId).set({
+            storeCode, date: dateStr, uploadDate: firebase.firestore.FieldValue.serverTimestamp(), metrics: kpiData 
+        });
+    },
+
+    saveWeeklyKPI: async (storeCode, weekStr, yearStr, kpiData) => {
+        const docId = `${yearStr}_${weekStr}_${storeCode}`;
+        await db.collection('kpi_weekly').doc(docId).set({
+            storeCode, week: weekStr, year: yearStr, uploadDate: firebase.firestore.FieldValue.serverTimestamp(), metrics: kpiData
+        });
+    },
+    
+    saveMasterfile: async (jsonData) => {
+        const batch = db.batch();
+        let count = 0;
+        for(let item of jsonData) {
+            const itemCode = String(item['Itemcode']).split('.')[0];
+            if (!itemCode || itemCode === 'undefined') continue;
+            const docRef = db.collection('products').doc(itemCode);
+            batch.set(docRef, {
+                itemCode, description: item['Description']||'', brand: item['Brand']||'Unknown',
+                price: dbService.cleanNumber(item['Reg. Price']), department: item['Dept']||'', class: item['Class']||''
+            }, { merge: true });
+            count++;
+            if(count % 450 === 0) { await batch.commit(); /* reset batch if needed logic */ }
+        }
+        await batch.commit();
+    },
+
+    getDailyKPIReport: async (storeCode, startDate, endDate) => {
+        try {
+            const snapshot = await db.collection('kpi_daily')
+                .where('storeCode', '==', storeCode)
+                .where('date', '>=', startDate)
+                .where('date', '<=', endDate)
+                .get();
+            
+            const data = {};
+            snapshot.forEach(doc => {
+                const kpi = doc.data();
+                let totalTESP = 0, totalQty = 0;
+                if (kpi.metrics) kpi.metrics.forEach(m => { totalTESP += (m.tesp||0); totalQty += (m.qty||0); });
+                data[kpi.date] = { tesp: totalTESP, tx: totalQty, atv: totalQty > 0 ? totalTESP/totalQty : 0 };
+            });
+            return { success: true, data };
+        } catch (e) {
+            if (e.code === 'failed-precondition') return { success: false, error: 'missing_index', message: e.message };
+            return { success: false, error: 'unknown', message: e.message };
+        }
+    },
+
+    getUserRole: async (uid) => {
+        const doc = await db.collection('users').doc(uid).get();
+        return doc.exists ? doc.data().role : 'Store';
+    }
+};
+
+// --- 3. File Processor ---
+const fileProcessor = {
+    processFiles: async (files, reportType, password) => {
+        let success = 0, fail = 0, errors = [];
+        ui.showLoading(true, `Processing ${files.length} files...`);
+        
+        for (let i=0; i<files.length; i++) {
+            try {
+                const file = files[i];
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'zip') await fileProcessor.handleZip(file, reportType);
+                else if (['xls','xlsx','csv'].includes(ext)) await fileProcessor.handleExcel(file, reportType);
+                success++;
+            } catch(e) {
+                console.error(e);
+                fail++;
+                errors.push(e.message);
+            }
+        }
+        ui.showLoading(false);
+        alert(`Completed: ${success}, Failed: ${fail}\n${errors.join('\n')}`);
+    },
+
+    handleZip: async (file, reportType) => {
+        const zip = new JSZip();
+        const content = await zip.loadAsync(file);
+        for (let filename in content.files) {
+            if (!content.files[filename].dir && filename.match(/\.(xls|xlsx|csv)$/i)) {
+                if (reportType === 'storeRecap' && !filename.toLowerCase().startsWith('storerecap4340')) continue;
+                if (reportType === 'saleByDept' && !filename.toLowerCase().startsWith('salebydeptuk4340')) continue;
+                
+                const fileData = await content.files[filename].async("arraybuffer");
+                await fileProcessor.handleExcel(new File([fileData], filename), reportType);
+            }
+        }
+    },
+
+    handleExcel: async (file, reportType) => {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        if (reportType === 'daily') {
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            await fileProcessor.processDailyKPI(rows, file.name);
+        } else if (reportType === 'weekly') {
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            await fileProcessor.processWeeklyKPI(rows, file.name);
+        } else if (reportType === 'storeRecap') {
+            const recs = await fileProcessor.parseStoreRecap(sheet, file.name);
+            await dbService.saveStoreRecapToFirestore(recs);
+        } else if (reportType === 'saleByDept') {
+            const recs = await fileProcessor.parseSaleByDept(sheet, file.name);
+            await dbService.saveSaleByDeptToFirestore(recs);
+        } else if (reportType === 'storeMaster') {
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            await dbService.saveMasterfile(rows);
+        }
+    },
+
+    processDailyKPI: async (rows, filename) => {
+        const headerIdx = rows.findIndex(r => r && (r.includes('Key KPI') || r[4] === 'Key KPI'));
+        if (headerIdx === -1) throw new Error("Invalid Daily KPI Format");
+
+        // Extract Metadata
+        const storeCode = String(rows[1]?.[1] || '0000').trim();
+        const rawDate = rows[2]?.[1];
+        const dateStr = fileProcessor.formatDate(rawDate);
+
+        // --- UPDATE INDICES HERE ---
+        const idxName = 4;  // Key KPI Name
+        const idxBB = 3;    // BB
+        const idxTesp = 8;  // TESP Actual
+        const idxNewMem = 11; // New Member
+        const idxTx = 13;   // Tx (QTY)
+
+        const data = [];
+        for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[idxName]) continue;
+            
+            const tesp = dbService.cleanNumber(row[idxTesp]);
+            const tx = dbService.cleanNumber(row[idxTx]);
+            
+            // Calculate ATV = TESP / Tx
+            let atv = 0;
+            if (tx > 0) {
+                atv = parseFloat((tesp / tx).toFixed(2));
+            }
+
+            const bb = dbService.cleanNumber(row[idxBB]);
+            const newMember = dbService.cleanNumber(row[idxNewMem]);
+
+            data.push({
+                kpiName: row[idxName],
+                tesp: tesp,
+                tx: tx,
+                atv: atv,
+                bb: bb,
+                newMember: newMember,
+                
+                // Map 'tx' to 'qty' for backward compatibility with Report Calendar
+                qty: tx 
+            });
+        }
+        await dbService.saveDailyKPI(storeCode, dateStr, data);
+    },
+
+    // --- 2. Weekly KPI ---
+    processWeeklyKPI: async (rows, filename) => {
+        const headerIndex = fileProcessor.findHeaderRow(rows, 'KEY KPI');
+        if (headerIndex === -1) throw new Error("Invalid Weekly KPI format");
+
+        const storeRaw = String(rows[2]?.[1] || '');
+        const storeCode = storeRaw.split(' ')[0] || '0000';
+        
+        const weekRaw = String(rows[3]?.[1] || '');
+        const yearStr = weekRaw.split(' ')[0] || new Date().getFullYear();
+        const weekStr = weekRaw.includes('Week') ? weekRaw.split('Week')[1].trim() : weekRaw;
+
+        const data = [];
+        for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[4]) continue;
+
+            data.push({
+                kpiName: row[4],
+                qty: dbService.cleanNumber(row[5]),
+                tesp: dbService.cleanNumber(row[6]),
+                netSales: dbService.cleanNumber(row[9])
+            });
+        }
+        await dbService.saveWeeklyKPI(storeCode, weekStr, String(yearStr), data);
+    },
+
+    // --- 3. Store Recap ---
+    parseStoreRecapSheet: async (worksheet, sheetName, fileName) => {
+        const getVal = (cellAddr) => worksheet[cellAddr] ? worksheet[cellAddr].v : undefined;
+        const storeCode = fileProcessor.detectStoreCodeFromSheet(worksheet, '4340');
+
+        let saleDateText = "";
+        for (let c = 6; c <= 20; c++) {
+            const cell = XLSX.utils.encode_cell({r: 2, c: c});
+            const val = getVal(cell);
+            if (val && String(val).includes('-')) {
+                saleDateText = val;
+                break;
+            }
+        }
+
+        if (!saleDateText) throw new Error("Sale Date not found in row 3");
+        const [d1, d2] = saleDateText.split('-').map(s => s.trim());
+        if (d1 !== d2) throw new Error(`กรุณาอัพโหลดทีละวัน (${saleDateText})`);
+
+        const dateParts = d1.split('/');
+        const saleDateKeyDmy = `${dateParts[0]}${dateParts[1]}${dateParts[2]}`;
+        const saleDateKeyYmd = `${dateParts[2]}${dateParts[1]}${dateParts[0]}`;
+
+        const findValueByLabel = (label) => {
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            for (let r = range.s.r; r <= range.e.r; r++) {
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    const cell = worksheet[XLSX.utils.encode_cell({r, c})];
+                    if (cell && String(cell.v).trim() === label) {
+                        for (let offset = 1; offset <= 15; offset++) {
+                            const valCell = worksheet[XLSX.utils.encode_cell({r, c: c + offset})];
+                            if (valCell && typeof valCell.v === 'number') return valCell.v;
+                            if (valCell && typeof valCell.v === 'string' && valCell.v.match(/^[0-9,.]+$/)) {
+                                return dbService.cleanNumber(valCell.v);
+                            }
+                        }
+                    }
+                }
+            }
+            return 0;
+        };
+
+        const tesp = findValueByLabel('TESP');
+        const tespAfterCoupon = findValueByLabel('TESP AFTER COUPON');
+        
+        let customer = 0;
+        const custCell = worksheet['AT17'] || worksheet['AU17'] || worksheet['AV17'];
+        if (custCell) customer = dbService.cleanNumber(custCell.v);
+
+        let atv = 0;
+        if (customer > 0) {
+            atv = parseFloat((tespAfterCoupon / customer).toFixed(2));
+        }
+
+        return [{
+            storeCode,
+            saleDateText,
+            saleDateKeyDmy,
+            saleDateKeyYmd,
+            tesp,
+            tespAfterCoupon,
+            customer,
+            atv,
+            source: { fileName, sheetName }
+        }];
+    },
+
+    // --- 4. Sale By Dept ---
+    parseSaleByDeptSheet: async (worksheet, sheetName, fileName) => {
+        const storeCode = fileProcessor.detectStoreCodeFromSheet(worksheet, '4340');
+        
+        let saleDateText = "";
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        for (let r = 0; r <= 5; r++) { 
+            for (let c = 0; c <= 20; c++) {
+                const cell = worksheet[XLSX.utils.encode_cell({r, c})];
+                if (cell && String(cell.v).includes('-') && String(cell.v).includes('/')) {
+                    saleDateText = cell.v;
+                    break;
+                }
+            }
+            if (saleDateText) break;
+        }
+        if (!saleDateText) throw new Error("Sale Date not found");
+
+        const [d1, d2] = saleDateText.split('-').map(s => s.trim());
+        if (d1 !== d2) throw new Error(`กรุณาอัพโหลดทีละวัน (${saleDateText})`);
+
+        const dateParts = d1.split('/');
+        const saleDateKeyDmy = `${dateParts[0]}${dateParts[1]}${dateParts[2]}`;
+        const saleDateKeyYmd = `${dateParts[2]}${dateParts[1]}${dateParts[0]}`;
+
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        let headerRowIdx = -1;
+        for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row.some(cell => String(cell).toLowerCase().includes('itemcode') || String(cell).toLowerCase().includes('dept'))) {
+                headerRowIdx = i;
+                break;
+            }
+        }
+        if (headerRowIdx === -1) throw new Error("Header row not found in SaleByDept");
+
+        const header = jsonData[headerRowIdx].map(h => String(h).toLowerCase());
+        const idxDepName = header.findIndex(h => h.includes('description') || h.includes('dep name'));
+        const idxDepCode = header.findIndex(h => h.includes('dept') || h.includes('itemcode'));
+        const idxBrand = header.findIndex(h => h.includes('brand'));
+        const idxTotal = header.findIndex(h => h.includes('net sales amt') || h.includes('total'));
+        const idxUnit = header.findIndex(h => h.includes('net qty') || h.includes('unit'));
+
+        const departments = [];
+        for (let i = headerRowIdx + 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue;
+
+            const deptCodeStr = row[idxDepCode] || "Unknown";
+            if (!deptCodeStr) continue;
+
+            const brandStr = String(row[idxBrand] || "").toUpperCase();
+            const salesVal = dbService.cleanNumber(row[idxTotal]);
+            const unitVal = dbService.cleanNumber(row[idxUnit]);
+
+            let brandType = 'propBrand';
+            if (brandStr.includes('BOOTS')) brandType = 'bootsBrand';
+            else if (brandStr.includes('EXCLUSIVE')) brandType = 'exclusiveBrand'; 
+            
+            let deptEntry = departments.find(d => d.depCode === deptCodeStr);
+            if (!deptEntry) {
+                deptEntry = {
+                    depCode: deptCodeStr,
+                    depName: row[idxDepName] || `Dept ${deptCodeStr}`,
+                    bootsBrand: 0,
+                    exclusiveBrand: 0,
+                    propBrand: 0,
+                    totalInDept: 0,
+                    unit: 0,
+                    tesp: 0,
+                    tisp: 0
+                };
+                departments.push(deptEntry);
+            }
+
+            if (brandType === 'bootsBrand') deptEntry.bootsBrand += salesVal;
+            else if (brandType === 'exclusiveBrand') deptEntry.exclusiveBrand += salesVal;
+            else deptEntry.propBrand += salesVal;
+
+            deptEntry.totalInDept += salesVal;
+            deptEntry.tesp += salesVal; 
+            deptEntry.unit += unitVal;
+        }
+
+        return [{
+            storeCode,
+            saleDateKeyDmy,
+            saleDateKeyYmd,
+            departments,
+            reportType: 'saleByDept',
+            source: { fileName, sheetName }
+        }];
+    },
+
+    // --- 5. Masterfile ---
+    processMasterfile: async (rows) => {
+        const headerIndex = fileProcessor.findHeaderRow(rows, 'Itemcode');
+        if (headerIndex === -1) throw new Error("Invalid Masterfile format");
+
+        const header = rows[headerIndex];
+        const idxCode = header.indexOf('Itemcode');
+        const idxDesc = header.indexOf('Description');
+        const idxPrice = header.indexOf('Reg. Price');
+        const idxBrand = header.indexOf('Brand');
+        const idxDept = header.indexOf('Dept');
+
+        const products = [];
+        for (let i = headerIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[idxCode]) continue;
+
+            products.push({
+                'Itemcode': row[idxCode],
+                'Description': row[idxDesc],
+                'Reg. Price': row[idxPrice],
+                'Brand': row[idxBrand],
+                'Dept': row[idxDept]
+            });
+        }
+        await dbService.saveMasterfile(products);
+    },
+
+    // --- Helpers ---
+    findHeaderRow: (rows, keyword) => {
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+            if (rows[i] && (rows[i].includes(keyword) || rows[i].some(c => String(c).includes(keyword)))) {
+                return i;
+            }
+        }
+        return -1;
+    },
+
+    detectStoreCodeFromSheet: (worksheet, defaultCode) => {
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        if (range.e.r >= 1) {
+            for (let c = 4; c <= 47; c++) { 
+                const cell = worksheet[XLSX.utils.encode_cell({r: 1, c})];
+                if (cell && typeof cell.v === 'string') {
+                    const match = cell.v.match(/^(\n
