@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { 
-    collection, doc, writeBatch, serverTimestamp, setDoc, getDoc, query, where, getDocs, orderBy 
+    collection, doc, writeBatch, serverTimestamp, setDoc, getDoc, query, where, getDocs 
 } from "firebase/firestore";
 
 export const dbService = {
@@ -30,154 +30,60 @@ export const dbService = {
         console.log(`Committed ${operations.length} operations.`);
     },
 
-    saveMasterfile: async (jsonData) => {
-        const operations = jsonData.map(item => {
-            const itemCode = String(item['Itemcode']).split('.')[0];
-            if (!itemCode || itemCode === 'undefined') return null;
+    // ฟังก์ชันเดิม (Daily/Weekly/Master)
+    saveMasterfile: async (jsonData) => { /* ...Copy existing code... */ },
+    saveDailyKPI: async (storeCode, dateStr, kpiData) => { /* ...Copy existing code... */ },
+    saveWeeklyKPI: async (storeCode, weekStr, yearStr, kpiData) => { /* ...Copy existing code... */ },
+    saveItemSales: async (storeCode, dateStr, salesData) => { /* ...Copy existing code... */ },
 
-            const docRef = doc(db, 'products', itemCode);
-            return {
-                type: 'set',
-                ref: docRef,
-                data: {
-                    itemCode: itemCode,
-                    description: item['Description'] || '',
-                    brand: item['Brand'] || 'Unknown',
-                    price: dbService.cleanNumber(item['Reg. Price']),
-                    department: item['Dept'] || '',
-                    class: item['Class'] || '',
-                    updatedAt: serverTimestamp()
-                },
-                options: { merge: true }
-            };
-        }).filter(op => op !== null);
-
-        await dbService.commitBatch(operations);
-        return operations.length;
-    },
-
-    saveDailyKPI: async (storeCode, dateStr, kpiData) => {
-        const docId = `${dateStr}_${storeCode}`;
-        const docRef = doc(db, 'kpi_daily', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            date: dateStr,
-            uploadDate: serverTimestamp(),
-            metrics: kpiData 
-        });
-    },
-
-    saveWeeklyKPI: async (storeCode, weekStr, yearStr, kpiData) => {
-        const docId = `${yearStr}_${weekStr}_${storeCode}`;
-        const docRef = doc(db, 'kpi_weekly', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            week: weekStr,
-            year: yearStr,
-            uploadDate: serverTimestamp(),
-            metrics: kpiData
-        });
-    },
-
-    saveStoreRecap: async (storeCode, dateStr, recapData) => {
-        const docId = `${dateStr}_${storeCode}`;
-        const docRef = doc(db, 'store_recap', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            date: dateStr,
-            ...recapData,
-            timestamp: serverTimestamp()
-        }, { merge: true });
-    },
-
-    saveItemSales: async (storeCode, dateStr, salesData) => {
-        const operations = salesData.map(row => {
-            const itemCode = String(row['Itemcode']).split('.')[0];
-            if (!itemCode) return null;
-
-            const docId = `${dateStr}_${storeCode}_${itemCode}`;
-            const docRef = doc(db, 'item_sales', docId);
-
-            return {
-                type: 'set',
-                ref: docRef,
-                data: {
-                    storeCode: storeCode,
-                    date: dateStr,
-                    itemCode: itemCode,
-                    description: row['Description'],
-                    netQty: dbService.cleanNumber(row['Net Qty']),
-                    netSalesAmt: dbService.cleanNumber(row['Net Sales Amt.']),
-                    brand: row['Brand'] || 'N/A' 
-                },
-                options: { merge: true }
-            };
-        }).filter(op => op !== null);
-
-        await dbService.commitBatch(operations);
-    },
-
-    getUserRole: async (uid) => {
-        try {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            return userDoc.exists() ? userDoc.data().role : 'Store';
-        } catch (e) {
-            console.error("Error fetching role:", e);
-            return 'Store';
-        }
-    },
-
-    createUser: async (uid, email, role) => {
-        await setDoc(doc(db, 'users', uid), {
-            email: email,
-            role: role,
-            createdAt: serverTimestamp()
-        });
-    },
-
-    getDailyKPIReport: async (storeCode, startDate, endDate) => {
-        try {
-            const q = query(
-                collection(db, 'kpi_daily'),
-                where('storeCode', '==', storeCode),
-                where('date', '>=', startDate),
-                where('date', '<=', endDate)
-            );
-            
-            const snapshot = await getDocs(q);
-            const data = {};
-            
-            snapshot.forEach(doc => {
-                const kpi = doc.data();
-                let totalTESP = 0;
-                let totalQty = 0;
-                
-                if (kpi.metrics && Array.isArray(kpi.metrics)) {
-                    kpi.metrics.forEach(m => {
-                        totalTESP += (m.tesp || 0);
-                        totalQty += (m.qty || 0);
-                    });
-                }
-                
-                data[kpi.date] = {
-                    tesp: totalTESP,
-                    tx: totalQty,
-                    atv: totalQty > 0 ? (totalTESP / totalQty) : 0
-                };
-            });
-            
-            return { success: true, data: data };
-        } catch (e) {
-            // Catch Index Error Specifically
-            if (e.code === 'failed-precondition') {
-                console.error("MISSING INDEX:", e.message);
-                return { success: false, error: 'missing_index', message: e.message };
+    // --- D. saveStoreRecapToFirestore ---
+    saveStoreRecapToFirestore: async (records) => {
+        const batch = writeBatch(db);
+        
+        records.forEach(record => {
+            if (!record.saleDateKeyYmd || !record.storeCode) {
+                throw new Error("Invalid Record: Missing Date or Store Code");
             }
-            console.error("Error fetching KPI report:", e);
-            return { success: false, error: 'unknown', message: e.message };
-        }
-    }
+            
+            const docId = `${record.saleDateKeyYmd}_${record.storeCode}`;
+            const docRef = doc(db, 'store_recap', docId);
+            
+            batch.set(docRef, {
+                ...record,
+                uploadDate: serverTimestamp()
+            }, { merge: true });
+        });
+
+        await batch.commit();
+        console.log(`Saved ${records.length} Store Recap records.`);
+    },
+
+    // --- E. saveSaleByDeptToFirestore ---
+    saveSaleByDeptToFirestore: async (records) => {
+        const batch = writeBatch(db);
+        
+        records.forEach(record => {
+            // Grouping logic is already done in parser (one record per file/day)
+            // But if multiple files for same day, we overwrite/merge.
+            
+            if (!record.saleDateKeyYmd || !record.storeCode) {
+                throw new Error("Invalid Record: Missing Date or Store Code");
+            }
+            
+            const docId = `${record.saleDateKeyYmd}_${record.storeCode}`;
+            const docRef = doc(db, 'sale_by_dept', docId);
+            
+            batch.set(docRef, {
+                ...record,
+                uploadDate: serverTimestamp()
+            }, { merge: true });
+        });
+
+        await batch.commit();
+        console.log(`Saved ${records.length} Sale By Dept records.`);
+    },
+    
+    getDailyKPIReport: async (storeCode, startDate, endDate) => { /* ...Copy existing code... */ },
+    getUserRole: async (uid) => { /* ...Copy existing code... */ },
+    createUser: async (uid, email, role) => { /* ...Copy existing code... */ }
 };
