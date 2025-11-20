@@ -1,190 +1,130 @@
 import { authService } from './auth.js';
 import { fileProcessor } from './file-processor.js';
+import { dbService } from './db-service.js';
 
 export const ui = {
-    elements: {
-        appScreen: document.getElementById('app-screen'),
-        loginScreen: document.getElementById('login-screen'),
-        contentArea: document.getElementById('content-area'),
-        loadingScreen: document.getElementById('loading-screen'),
-        userName: document.getElementById('user-name'),
-        userRole: document.getElementById('user-role'),
-        navConfig: document.getElementById('nav-config')
-    },
-
-    init: () => {
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const page = e.target.dataset.page;
-                ui.navigateTo(page);
-            });
-        });
-    },
-
-    toggleLogin: (isLoggedIn, user, role) => {
-        if (isLoggedIn) {
-            ui.elements.loginScreen.classList.add('hidden');
-            ui.elements.appScreen.classList.remove('hidden');
-            ui.elements.userName.textContent = user.email;
-            ui.elements.userRole.textContent = role;
-
-            if (['Admin', 'Manager'].includes(role)) {
-                ui.elements.navConfig.classList.remove('hidden');
-            } else {
-                ui.elements.navConfig.classList.add('hidden');
-            }
-            
-            ui.navigateTo('upload'); 
-        } else {
-            ui.elements.loginScreen.classList.remove('hidden');
-            ui.elements.appScreen.classList.add('hidden');
-        }
-    },
-
-    navigateTo: (page) => {
-        ui.elements.contentArea.innerHTML = '';
-        
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            if(btn.dataset.page === page) btn.classList.add('text-blue-600', 'bg-blue-50');
-            else btn.classList.remove('text-blue-600', 'bg-blue-50');
-        });
-
-        switch(page) {
-            case 'upload': ui.renderUploadPage(); break;
-            case 'report': ui.renderReportPage(); break;
-            case 'config': ui.renderConfigPage(); break;
-        }
-    },
-
-    renderUploadPage: () => {
-        ui.elements.contentArea.innerHTML = `
-            <div class="max-w-3xl mx-auto mt-6">
-                <div class="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 text-center">
-                    <div class="mb-6">
-                        <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mt-4">Upload KPI Files</h2>
-                        <p class="text-gray-500 mt-2">Support .xls, .xlsx, .zip (Single or Batch)</p>
-                        <p class="text-xs text-gray-400 mt-1">Password Protected Zip: NewBI#2020</p>
-                    </div>
-                    
-                    <input type="file" id="fileInput" multiple accept=".xls,.xlsx,.csv,.zip" class="hidden">
-                    
-                    <div class="flex justify-center gap-4">
-                        <button id="btn-select" class="border-2 border-blue-500 text-blue-600 px-8 py-3 rounded-full font-bold hover:bg-blue-50 transition">
-                            Select Files
-                        </button>
-                        <button id="btn-process" class="bg-chrome-blue text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            Process Data
-                        </button>
-                    </div>
-
-                    <div id="file-list" class="mt-8 text-left text-sm text-gray-600 space-y-2 border-t pt-4"></div>
-                </div>
-            </div>
-        `;
-
-        const input = document.getElementById('fileInput');
-        const list = document.getElementById('file-list');
-        const btnProcess = document.getElementById('btn-process');
-
-        document.getElementById('btn-select').onclick = () => input.click();
-
-        input.onchange = () => {
-            list.innerHTML = '';
-            if (input.files.length > 0) {
-                Array.from(input.files).forEach(f => {
-                    list.innerHTML += `
-                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <div class="flex items-center">
-                                <span class="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                                ${f.name}
-                            </div>
-                            <span class="text-xs text-gray-400">${(f.size/1024).toFixed(1)} KB</span>
-                        </div>`;
-                });
-                btnProcess.disabled = false;
-            } else {
-                btnProcess.disabled = true;
-            }
-        };
-
-        btnProcess.onclick = () => {
-            if(input.files.length > 0) fileProcessor.processFiles(input.files);
-        };
-    },
-
-    renderReportPage: () => {
-        ui.elements.contentArea.innerHTML = `
-            <div class="max-w-5xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Performance Dashboard</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Net Sales (Today)</h3>
-                        <p class="text-3xl font-bold text-gray-800 mt-2">Loading...</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Total Transactions</h3>
-                        <p class="text-3xl font-bold text-gray-800 mt-2">Loading...</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Boots vs Prop Brand</h3>
-                        <p class="text-3xl font-bold text-blue-600 mt-2">Loading...</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-96 flex items-center justify-center">
-                    <p class="text-gray-400">Chart Visualization will appear here...</p>
-                </div>
-            </div>
-        `;
-    },
-
-    renderConfigPage: () => {
-        ui.elements.contentArea.innerHTML = `
-            <div class="max-w-4xl mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">System Configuration</h2>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Add New User</button>
-                </div>
-                
-                <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Admin</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Admin</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900">Edit</a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    },
-
-    showLoading: (show, text = "Processing...") => {
-        const el = ui.elements.loadingScreen;
-        if (show) {
-            el.classList.remove('hidden');
-            el.querySelector('p').textContent = text;
-        } else {
-            el.classList.add('hidden');
-        }
-    },
+    state: { viewDate: new Date('2025-11-01'), reportType: 'daily', uploadMode: 'single' },
     
-    updateLoadingText: (text) => {
-        ui.elements.loadingScreen.querySelector('p').textContent = text;
+    init: () => {
+        // Bind navigation clicks
+        document.getElementById('nav-upload').onclick = () => ui.nav('upload');
+        document.getElementById('nav-report').onclick = () => ui.nav('report');
+        document.getElementById('logout-btn').onclick = () => authService.logout();
+    },
+
+    nav: (page) => {
+        const area = document.getElementById('content-area');
+        area.innerHTML = '';
+        
+        ['upload', 'report'].forEach(p => {
+            const btn = document.getElementById('nav-' + p);
+            if(p === page) { btn.classList.add('bg-blue-600','text-white'); btn.classList.remove('text-slate-500'); }
+            else { btn.classList.remove('bg-blue-600','text-white'); btn.classList.add('text-slate-500'); }
+        });
+
+        if(page === 'upload') ui.renderUpload(area);
+        if(page === 'report') ui.renderReport(area);
+    },
+
+    renderUpload: (area) => {
+        const { reportType, uploadMode } = ui.state;
+        const btnCls = (t) => `w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition ${reportType===t ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`;
+
+        area.innerHTML = `
+        <div class="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto animate-fade">
+            <div class="w-full md:w-1/4 flex flex-col gap-1">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-2">Report Type</h3>
+                <button class="${btnCls('daily')}" id="btn-daily">Daily Sale KPI</button>
+                <button class="${btnCls('weekly')}" id="btn-weekly">Weekly Sale KPI</button>
+                <button class="${btnCls('storeRecap')}" id="btn-recap">Store Recap</button>
+                <button class="${btnCls('saleByDept')}" id="btn-dept">Sale By Dept</button>
+                <div class="h-px bg-slate-200 my-2"></div>
+                <button class="${btnCls('storeMaster')}" id="btn-master">Store Master</button>
+            </div>
+            <div class="w-full md:w-3/4 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[400px]">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Upload ${reportType.replace(/([A-Z])/g, ' $1')}</h2>
+                
+                ${reportType !== 'storeMaster' ? `
+                <div class="flex bg-slate-100 p-1 rounded-lg w-fit mb-6">
+                    <button id="mode-single" class="px-3 py-1 rounded text-xs font-bold transition ${uploadMode==='single'?'bg-white shadow text-blue-600':'text-slate-500'}">Single</button>
+                    <button id="mode-folder" class="px-3 py-1 rounded text-xs font-bold transition ${uploadMode==='folder'?'bg-white shadow text-blue-600':'text-slate-500'}">Folder</button>
+                </div>` : ''}
+                
+                <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl h-48 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 transition">
+                    <span class="text-sm font-medium">Click to select files</span>
+                </div>
+                <input type="file" id="fIn" class="hidden" ${uploadMode==='folder'?'webkitdirectory directory multiple':''} multiple>
+            </div>
+        </div>`;
+
+        // Bind events
+        document.getElementById('btn-daily').onclick = () => ui.setType('daily');
+        document.getElementById('btn-weekly').onclick = () => ui.setType('weekly');
+        document.getElementById('btn-recap').onclick = () => ui.setType('storeRecap');
+        document.getElementById('btn-dept').onclick = () => ui.setType('saleByDept');
+        document.getElementById('btn-master').onclick = () => ui.setType('storeMaster');
+        
+        if(reportType !== 'storeMaster') {
+            document.getElementById('mode-single').onclick = () => ui.setMode('single');
+            document.getElementById('mode-folder').onclick = () => ui.setMode('folder');
+        }
+
+        const fIn = document.getElementById('fIn');
+        document.getElementById('drop-zone').onclick = () => fIn.click();
+        fIn.onchange = () => fileProcessor.process(fIn.files, reportType);
+    },
+
+    setType: (t) => { ui.state.reportType = t; ui.nav('upload'); },
+    setMode: (m) => { ui.state.uploadMode = m; ui.nav('upload'); },
+
+    renderReport: async (area) => {
+        const d = ui.state.viewDate;
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const startStr = `${y}-${String(m+1).padStart(2,'0')}-01`;
+        const lastDay = new Date(y, m+1, 0).getDate();
+        const endStr = `${y}-${String(m+1).padStart(2,'0')}-${lastDay}`;
+
+        area.innerHTML = `
+        <div class="max-w-6xl mx-auto animate-fade">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-800">${d.toLocaleString('default',{month:'long'})} ${y}</h2>
+                <div class="flex gap-2">
+                    <button id="prev-month" class="px-3 py-1 border rounded bg-white hover:bg-slate-50 text-sm">Prev</button>
+                    <button id="next-month" class="px-3 py-1 border rounded bg-white hover:bg-slate-50 text-sm">Next</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 border-b"><tr><th class="p-4">Date</th><th class="p-4 text-right">TESP</th><th class="p-4 text-right">Tx</th><th class="p-4 text-right">ATV</th><th class="p-4 text-right">BB</th><th class="p-4 text-right">NewMem</th></tr></thead>
+                    <tbody id="tb"><tr><td colspan="6" class="p-10 text-center text-slate-400">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>`;
+
+        document.getElementById('prev-month').onclick = () => ui.chgMonth(-1);
+        document.getElementById('next-month').onclick = () => ui.chgMonth(1);
+
+        const res = await dbService.getReport('4340', startStr, endStr);
+        if(!res.ok) { document.getElementById('tb').innerHTML = `<tr><td colspan="6" class="p-8 text-center text-red-500">${res.msg}</td></tr>`; return; }
+
+        let h = '';
+        for(let i=1; i<=lastDay; i++) {
+            const dayStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const r = res.data[dayStr];
+            if(r) {
+                h += `<tr class="border-b hover:bg-slate-50"><td class="p-4 font-medium">${i}</td><td class="p-4 text-right font-bold">${r.tesp.toLocaleString()}</td><td class="p-4 text-right">${r.tx}</td><td class="p-4 text-right text-blue-600">${r.atv.toFixed(0)}</td><td class="p-4 text-right">${r.bb.toLocaleString()}</td><td class="p-4 text-right text-green-600">${r.newMem}</td></tr>`;
+            } else {
+                h += `<tr class="border-b hover:bg-slate-50"><td class="p-4 text-slate-400">${i}</td><td colspan="5" class="p-4 text-center text-xs text-slate-300">No Data</td></tr>`;
+            }
+        }
+        document.getElementById('tb').innerHTML = h;
+    },
+
+    chgMonth: (o) => { ui.state.viewDate.setMonth(ui.state.viewDate.getMonth() + o); ui.nav('report'); },
+    loading: (s,t) => {
+        const el = document.getElementById('loading-screen');
+        if(s) el.classList.remove('hidden');
+        else el.classList.add('hidden');
     }
 };

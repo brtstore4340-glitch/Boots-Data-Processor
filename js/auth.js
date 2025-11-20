@@ -1,68 +1,30 @@
-import { auth, db } from './firebase-config.js';
+import { auth } from './firebase-config.js';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { dbService } from './db-service.js';
 
 export const authService = {
-    currentUser: null,
-    currentRole: null,
-    timeoutTimer: null,
-    TIMEOUT_LIMIT: 10 * 60 * 1000, 
-
-    init: (onLoginSuccess, onLogout) => {
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                authService.currentUser = user;
-                authService.currentRole = await dbService.getUserRole(user.uid);
-                
-                authService.startSessionTimer();
-                authService.setupActivityListeners();
-                
-                onLoginSuccess(user, authService.currentRole);
+    init: () => {
+        onAuthStateChanged(auth, user => {
+            document.getElementById('loading-screen').classList.add('hidden');
+            if(user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                // Could load role here if needed
+                import('./ui.js').then(module => module.ui.nav('upload'));
             } else {
-                authService.currentUser = null;
-                authService.currentRole = null;
-                authService.clearSessionTimer();
-                onLogout();
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
             }
         });
-    },
 
-    login: async (email, password) => {
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            return { success: true };
-        } catch (error) {
-            return { success: false, message: error.message };
+        const form = document.getElementById('login-form');
+        if(form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+                } catch(e) { alert(e.message); }
+            };
         }
     },
-
-    logout: async () => {
-        await signOut(auth);
-        window.location.reload();
-    },
-
-    startSessionTimer: () => {
-        clearTimeout(authService.timeoutTimer);
-        authService.timeoutTimer = setTimeout(() => {
-            alert("Session expired due to inactivity (10 mins).");
-            authService.logout();
-        }, authService.TIMEOUT_LIMIT);
-    },
-
-    resetSessionTimer: () => {
-        if (authService.currentUser) {
-            clearTimeout(authService.timeoutTimer);
-            authService.startSessionTimer();
-        }
-    },
-    
-    clearSessionTimer: () => {
-        clearTimeout(authService.timeoutTimer);
-    },
-
-    setupActivityListeners: () => {
-        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
-            document.addEventListener(evt, () => authService.resetSessionTimer());
-        });
-    }
+    logout: () => signOut(auth).then(() => window.location.reload())
 };

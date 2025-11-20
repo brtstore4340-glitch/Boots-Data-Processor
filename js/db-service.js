@@ -1,132 +1,80 @@
 import { db } from './firebase-config.js';
-import { 
-    collection, doc, writeBatch, serverTimestamp, setDoc, getDoc 
-} from "firebase/firestore";
+import { doc, collection, writeBatch, serverTimestamp, setDoc, getDoc, query, where, getDocs } from "firebase/firestore";
 
 export const dbService = {
+    cleanNum: (v) => typeof v === 'number' ? v : parseFloat(String(v||0).replace(/,/g,'')) || 0,
+
+    saveDaily: async (store, date, metrics) => {
+        await setDoc(doc(db, 'kpi_daily', `${date}_${store}`), { storeCode: store, date, metrics }, { merge: true });
+    },
+
+    saveWeekly: async (store, week, year, metrics) => {
+        await setDoc(doc(db, 'kpi_weekly', `${year}_${week}_${store}`), { storeCode: store, week, year, metrics }, { merge: true });
+    },
     
-    cleanNumber: (val) => {
-        if (typeof val === 'number') return val;
-        if (!val) return 0;
-        return parseFloat(String(val).replace(/,/g, '')) || 0;
+    saveStoreRecap: async (records) => {
+        const batch = writeBatch(db);
+        records.forEach(r => {
+            const ref = doc(db, 'store_recap', `${r.saleDateKeyYmd}_${r.storeCode}`);
+            batch.set(ref, { ...r, uploadDate: serverTimestamp() }, { merge: true });
+        });
+        await batch.commit();
     },
 
-    commitBatch: async (operations) => {
-        const BATCH_SIZE = 450; 
-        const chunks = [];
-        for (let i = 0; i < operations.length; i += BATCH_SIZE) {
-            chunks.push(operations.slice(i, i + BATCH_SIZE));
-        }
+    saveSaleByDept: async (records) => {
+        const batch = writeBatch(db);
+        records.forEach(r => {
+            const ref = doc(db, 'sale_by_dept', `${r.saleDateKeyYmd}_${r.storeCode}`);
+            batch.set(ref, { ...r, uploadDate: serverTimestamp() }, { merge: true });
+        });
+        await batch.commit();
+    },
 
-        for (const chunk of chunks) {
-            const batch = writeBatch(db);
-            chunk.forEach(op => {
-                if (op.type === 'set') batch.set(op.ref, op.data, op.options);
-                else if (op.type === 'update') batch.update(op.ref, op.data);
-                else if (op.type === 'delete') batch.delete(op.ref);
+    saveMaster: async (items) => {
+        const batch = writeBatch(db);
+        let i = 0;
+        for(const item of items) {
+            const code = String(item['Itemcode']).split('.')[0];
+            if(code) {
+                const ref = doc(db, 'products', code);
+                batch.set(ref, {
+                    itemCode: code, 
+                    desc: item['Description'], 
+                    price: dbService.cleanNum(item['Reg. Price']), 
+                    brand: item['Brand'],
+                    dept: item['Dept']
+                }, { merge: true });
+                i++;
+                if(i % 400 === 0) await batch.commit();
+            }
+        }
+        await batch.commit();
+    },
+
+    getReport: async (store, start, end) => {
+        try {
+            const q = query(collection(db, 'kpi_daily'), where('storeCode','==',store), where('date','>=',start), where('date','<=',end));
+            const snap = await getDocs(q);
+            const data = {};
+            snap.forEach(docRef => {
+                const d = docRef.data();
+                let tesp=0, tx=0, bb=0, newMem=0;
+                if(d.metrics) d.metrics.forEach(m => {
+                    tesp += (m.tesp||0); 
+                    tx += (m.tx !== undefined ? m.tx : (m.qty||0));
+                    bb += (m.bb||0); 
+                    newMem += (m.newMember||0);
+                });
+                data[d.date] = { tesp, tx, bb, newMem, atv: tx > 0 ? tesp/tx : 0 };
             });
-            await batch.commit();
-        }
-        console.log(`Committed ${operations.length} operations.`);
-    },
-
-    saveMasterfile: async (jsonData) => {
-        const operations = jsonData.map(item => {
-            const itemCode = String(item['Itemcode']).split('.')[0];
-            if (!itemCode || itemCode === 'undefined') return null;
-
-            const docRef = doc(db, 'products', itemCode);
-            return {
-                type: 'set',
-                ref: docRef,
-                data: {
-                    itemCode: itemCode,
-                    description: item['Description'] || '',
-                    brand: item['Brand'] || 'Unknown',
-                    price: dbService.cleanNumber(item['Reg. Price']),
-                    department: item['Dept'] || '',
-                    class: item['Class'] || '',
-                    updatedAt: serverTimestamp()
-                },
-                options: { merge: true }
-            };
-        }).filter(op => op !== null);
-
-        await dbService.commitBatch(operations);
-        return operations.length;
-    },
-
-    saveDailyKPI: async (storeCode, dateStr, kpiData) => {
-        const docId = `${dateStr}_${storeCode}`;
-        const docRef = doc(db, 'kpi_daily', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            date: dateStr,
-            uploadDate: serverTimestamp(),
-            metrics: kpiData 
-        });
-    },
-
-    saveWeeklyKPI: async (storeCode, weekStr, yearStr, kpiData) => {
-        const docId = `${yearStr}_${weekStr}_${storeCode}`;
-        const docRef = doc(db, 'kpi_weekly', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            week: weekStr,
-            year: yearStr,
-            uploadDate: serverTimestamp(),
-            metrics: kpiData
-        });
-    },
-
-    saveStoreRecap: async (storeCode, dateStr, recapData) => {
-        const docId = `${dateStr}_${storeCode}`;
-        const docRef = doc(db, 'store_recap', docId);
-
-        await setDoc(docRef, {
-            storeCode: storeCode,
-            date: dateStr,
-            ...recapData,
-            timestamp: serverTimestamp()
-        }, { merge: true });
-    },
-
-    saveItemSales: async (storeCode, dateStr, salesData) => {
-        const operations = salesData.map(row => {
-            const itemCode = String(row['Itemcode']).split('.')[0];
-            if (!itemCode) return null;
-
-            const docId = `${dateStr}_${storeCode}_${itemCode}`;
-            const docRef = doc(db, 'item_sales', docId);
-
-            return {
-                type: 'set',
-                ref: docRef,
-                data: {
-                    storeCode: storeCode,
-                    date: dateStr,
-                    itemCode: itemCode,
-                    description: row['Description'],
-                    netQty: dbService.cleanNumber(row['Net Qty']),
-                    netSalesAmt: dbService.cleanNumber(row['Net Sales Amt.']),
-                    brand: row['Brand'] || 'N/A' 
-                },
-                options: { merge: true }
-            };
-        }).filter(op => op !== null);
-
-        await dbService.commitBatch(operations);
+            return { ok: true, data };
+        } catch(e) { return { ok: false, msg: e.message }; }
     },
 
     getUserRole: async (uid) => {
         try {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            return userDoc.exists() ? userDoc.data().role : 'Store';
-        } catch (e) {
-            console.error("Error fetching role:", e);
-            return 'Store';
-        }
+            const d = await getDoc(doc(db, 'users', uid));
+            return d.exists() ? d.data().role : 'Store';
+        } catch(e) { return 'Store'; }
     }
 };
