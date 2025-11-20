@@ -1,5 +1,10 @@
 import { auth, db } from './firebase-config.js';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, // Added
+    signOut, 
+    onAuthStateChanged 
+} from "firebase/auth";
 import { dbService } from './db-service.js';
 
 export const authService = {
@@ -30,6 +35,17 @@ export const authService = {
     login: async (email, password) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    },
+
+    // New: Register Function
+    register: async (email, password, role) => {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await dbService.createUser(userCredential.user.uid, email, role);
             return { success: true };
         } catch (error) {
             return { success: false, message: error.message };

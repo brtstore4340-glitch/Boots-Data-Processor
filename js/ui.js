@@ -1,5 +1,6 @@
 import { authService } from './auth.js';
 import { fileProcessor } from './file-processor.js';
+import { dbService } from './db-service.js';
 
 export const ui = {
     elements: {
@@ -34,7 +35,7 @@ export const ui = {
                 ui.elements.navConfig.classList.add('hidden');
             }
             
-            ui.navigateTo('upload'); 
+            ui.navigateTo('report'); // Default to report for demo
         } else {
             ui.elements.loginScreen.classList.remove('hidden');
             ui.elements.appScreen.classList.add('hidden');
@@ -55,6 +56,8 @@ export const ui = {
             case 'config': ui.renderConfigPage(); break;
         }
     },
+
+    // --- Render Pages ---
 
     renderUploadPage: () => {
         ui.elements.contentArea.innerHTML = `
@@ -115,29 +118,120 @@ export const ui = {
         };
     },
 
-    renderReportPage: () => {
+    // --- Updated Report Page for Calendar View ---
+    renderReportPage: async () => {
+        const today = new Date();
+        // Calculate Start of Week (Monday)
+        const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+        const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); 
+        const startOfWeek = new Date(today.setDate(diff));
+        
+        const startDateStr = startOfWeek.toISOString().split('T')[0];
+        
+        // Calculate End of Week (Sunday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        const endDateStr = endOfWeek.toISOString().split('T')[0];
+
         ui.elements.contentArea.innerHTML = `
-            <div class="max-w-5xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Performance Dashboard</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Net Sales (Today)</h3>
-                        <p class="text-3xl font-bold text-gray-800 mt-2">Loading...</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Total Transactions</h3>
-                        <p class="text-3xl font-bold text-gray-800 mt-2">Loading...</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-gray-500 text-sm font-medium">Boots vs Prop Brand</h3>
-                        <p class="text-3xl font-bold text-blue-600 mt-2">Loading...</p>
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Weekly KPI Calendar</h2>
+                    <div class="flex space-x-2">
+                         <span class="px-3 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-100">No Data</span>
+                         <span class="px-3 py-1 bg-green-50 text-green-600 text-xs rounded border border-green-100">Future</span>
+                         <span class="px-3 py-1 bg-white text-gray-600 text-xs rounded border">Completed</span>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-96 flex items-center justify-center">
-                    <p class="text-gray-400">Chart Visualization will appear here...</p>
+
+                <!-- Calendar Grid -->
+                <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                    <!-- Loading State -->
+                    <div class="col-span-7 text-center py-12 text-gray-400">Loading Calendar...</div>
                 </div>
             </div>
         `;
+
+        // Fetch Data
+        const storeCode = '4340'; // Hardcoded for now, or get from user profile
+        const reportData = await dbService.getDailyKPIReport(storeCode, startDateStr, endDateStr);
+        
+        ui.renderCalendar(startOfWeek, reportData);
+    },
+
+    renderCalendar: (startOfWeek, data) => {
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '';
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(startOfWeek.getDate() + i);
+            const dateStr = currentDay.toISOString().split('T')[0]; // YYYY-MM-DD
+            
+            // Format DD/MM/YYYY
+            const displayDate = `${String(currentDay.getDate()).padStart(2,'0')}/${String(currentDay.getMonth()+1).padStart(2,'0')}/${currentDay.getFullYear()}`;
+            
+            const dayData = data[dateStr];
+            const isFuture = currentDay > today;
+            
+            let cardClass = "bg-white border-gray-200";
+            let contentHtml = "";
+
+            if (dayData) {
+                // Data Exists
+                cardClass = "bg-white border-blue-200 shadow-md ring-1 ring-blue-100";
+                contentHtml = `
+                    <div class="space-y-3 mt-2">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase">Tesp. Actual</p>
+                            <p class="text-lg font-bold text-blue-600">${dayData.tesp.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase">Tx</p>
+                            <p class="text-sm font-semibold text-gray-700">${dayData.tx.toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase">ATV</p>
+                            <p class="text-sm font-semibold text-gray-700">${dayData.atv.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                if (isFuture) {
+                    // Future -> Green
+                    cardClass = "bg-green-50 border-green-100 opacity-60";
+                    contentHtml = `
+                        <div class="h-32 flex items-center justify-center">
+                           
+                        </div>
+                    `;
+                } else {
+                    // Missing Data (Past/Today) -> Red
+                    cardClass = "bg-red-50 border-red-100";
+                    contentHtml = `
+                        <div class="h-32 flex flex-col items-center justify-center text-red-300">
+                            <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-sm font-medium">No Data</span>
+                        </div>
+                    `;
+                }
+            }
+
+            grid.innerHTML += `
+                <div class="rounded-xl border p-4 flex flex-col ${cardClass} transition hover:shadow-lg">
+                    <div class="text-sm font-semibold text-gray-500 mb-1">${days[i]}</div>
+                    <div class="text-xs text-gray-400 mb-2">${displayDate}</div>
+                    <div class="flex-1">
+                        ${contentHtml}
+                    </div>
+                </div>
+            `;
+        }
     },
 
     renderConfigPage: () => {
@@ -154,15 +248,15 @@ export const ui = {
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Admin</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">admin@kpi.com</td>
                                 <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Admin</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Active</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a href="#" class="text-blue-600 hover:text-blue-900">Edit</a>
                                 </td>

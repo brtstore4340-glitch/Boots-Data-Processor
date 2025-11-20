@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { 
-    collection, doc, writeBatch, serverTimestamp, setDoc, getDoc 
+    collection, doc, writeBatch, serverTimestamp, setDoc, getDoc, query, where, getDocs, orderBy 
 } from "firebase/firestore";
 
 export const dbService = {
@@ -127,6 +127,54 @@ export const dbService = {
         } catch (e) {
             console.error("Error fetching role:", e);
             return 'Store';
+        }
+    },
+
+    createUser: async (uid, email, role) => {
+        await setDoc(doc(db, 'users', uid), {
+            email: email,
+            role: role,
+            createdAt: serverTimestamp()
+        });
+    },
+
+    // --- New: Get Daily KPI for Calendar ---
+    getDailyKPIReport: async (storeCode, startDate, endDate) => {
+        try {
+            const q = query(
+                collection(db, 'kpi_daily'),
+                where('storeCode', '==', storeCode),
+                where('date', '>=', startDate),
+                where('date', '<=', endDate)
+            );
+            
+            const snapshot = await getDocs(q);
+            const data = {};
+            
+            snapshot.forEach(doc => {
+                const kpi = doc.data();
+                // Aggregate metrics to get Total for the day
+                let totalTESP = 0;
+                let totalQty = 0;
+                
+                if (kpi.metrics && Array.isArray(kpi.metrics)) {
+                    kpi.metrics.forEach(m => {
+                        totalTESP += (m.tesp || 0);
+                        totalQty += (m.qty || 0);
+                    });
+                }
+                
+                data[kpi.date] = {
+                    tesp: totalTESP,
+                    tx: totalQty,
+                    atv: totalQty > 0 ? (totalTESP / totalQty) : 0
+                };
+            });
+            
+            return data;
+        } catch (e) {
+            console.error("Error fetching KPI report:", e);
+            return {};
         }
     }
 };
