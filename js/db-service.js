@@ -138,7 +138,6 @@ export const dbService = {
         });
     },
 
-    // --- New: Get Daily KPI for Calendar ---
     getDailyKPIReport: async (storeCode, startDate, endDate) => {
         try {
             const q = query(
@@ -153,7 +152,6 @@ export const dbService = {
             
             snapshot.forEach(doc => {
                 const kpi = doc.data();
-                // Aggregate metrics to get Total for the day
                 let totalTESP = 0;
                 let totalQty = 0;
                 
@@ -171,10 +169,15 @@ export const dbService = {
                 };
             });
             
-            return data;
+            return { success: true, data: data };
         } catch (e) {
+            // Catch Index Error Specifically
+            if (e.code === 'failed-precondition') {
+                console.error("MISSING INDEX:", e.message);
+                return { success: false, error: 'missing_index', message: e.message };
+            }
             console.error("Error fetching KPI report:", e);
-            return {};
+            return { success: false, error: 'unknown', message: e.message };
         }
     }
 };
