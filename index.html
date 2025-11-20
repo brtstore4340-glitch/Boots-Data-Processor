@@ -5,30 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KPI System V9 (Final)</title>
     
-    <!-- 1. Libraries -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Excel Utils -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    <!-- 2. Firebase SDK (Compat) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: #f0f2f5; color: #1e293b; }
-        .bg-chrome { background-color: #1a73e8; } /* Google Blue */
+        .bg-chrome { background-color: #1a73e8; } 
         .text-chrome { color: #1a73e8; }
         
-        /* Table Styles */
-        th { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px; }
-        td { font-size: 14px; }
-        .hover-row:hover { background-color: #f8fafc; }
+        /* Table & Grid Styles */
+        th { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px; }
+        td { font-size: 13px; }
+        .hover-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         
         /* Animations */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -36,20 +43,19 @@
     <!-- Loading Screen -->
     <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-        <p class="text-gray-500 font-medium">กำลังเชื่อมต่อระบบ...</p>
+        <p class="text-gray-500 font-medium text-sm">Connecting...</p>
     </div>
 
     <!-- Login Screen -->
     <div id="login-screen" class="hidden fixed inset-0 bg-gray-100 z-40 flex items-center justify-center">
         <div class="bg-white p-10 rounded-2xl shadow-xl w-96">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">KPI Login</h1>
-                <p class="text-gray-400 text-sm">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">KPI Login</h1>
             </div>
             <form id="login-form" class="space-y-4">
-                <input type="email" id="email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Email" value="admin@kpi.com" required>
-                <input type="password" id="password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Password" value="admin1234" required>
-                <button type="submit" class="w-full bg-chrome text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg">เข้าสู่ระบบ</button>
+                <input type="email" id="email" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500" placeholder="Email" value="admin@kpi.com" required>
+                <input type="password" id="password" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500" placeholder="Password" value="admin1234" required>
+                <button type="submit" class="w-full bg-chrome text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">Sign In</button>
             </form>
         </div>
     </div>
@@ -58,35 +64,27 @@
     <div id="app-screen" class="hidden flex-1 flex flex-col h-full">
         <!-- Navbar -->
         <nav class="bg-white shadow-sm border-b h-16 shrink-0 px-6 flex justify-between items-center z-10">
-            <div class="flex items-center gap-3 font-bold text-xl text-gray-800">
-                <div class="w-8 h-8 bg-chrome rounded text-white flex items-center justify-center text-sm">K</div>
-                KPI Processor
+            <div class="flex items-center gap-3 font-bold text-lg text-gray-800">
+                <div class="w-8 h-8 bg-chrome rounded-lg text-white flex items-center justify-center text-sm">K</div>
+                KPI Processor V9
             </div>
             
-            <!-- Main Menu -->
             <div class="flex gap-2 bg-gray-100 p-1 rounded-lg">
-                <button onclick="ui.nav('upload')" id="nav-upload" class="px-6 py-1.5 rounded-md text-sm font-bold transition">Upload</button>
-                <button onclick="ui.nav('report')" id="nav-report" class="px-6 py-1.5 rounded-md text-sm font-bold transition">Report</button>
+                <button onclick="ui.nav('upload')" id="nav-upload" class="px-5 py-1.5 rounded-md text-sm font-semibold text-gray-600 hover:bg-white hover:shadow-sm transition">Upload</button>
+                <button onclick="ui.nav('report')" id="nav-report" class="px-5 py-1.5 rounded-md text-sm font-semibold text-gray-600 hover:bg-white hover:shadow-sm transition">Report</button>
             </div>
 
             <div class="flex items-center gap-4">
-                <span id="user-role" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Admin</span>
-                <button onclick="authService.logout()" class="text-gray-400 hover:text-red-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                </button>
+                <button onclick="authService.logout()" class="text-gray-400 hover:text-red-500 text-sm">Logout</button>
             </div>
         </nav>
 
-        <!-- Dynamic Content -->
+        <!-- Dynamic Content Area -->
         <main id="content-area" class="flex-1 overflow-auto p-6 bg-slate-50"></main>
     </div>
 
 <script>
-/**
- * ==========================================
- * 1. CONFIGURATION & SERVICES
- * ==========================================
- */
+/** 1. CONFIG **/
 const firebaseConfig = {
   apiKey: "AIzaSyCIAnpjvT2k6K-54tGx8MLSzXLXtVQCGDk",
   authDomain: "daily-report-c7e73.firebaseapp.com",
@@ -96,7 +94,7 @@ const firebaseConfig = {
   appId: "1:784313419402:web:4e31ceccb3caaf4c830f73"
 };
 
-// Failsafe: Auto-bypass loading if blocked
+// Auto-bypass loading if stuck
 setTimeout(() => {
     if(!document.getElementById('loading-screen').classList.contains('hidden')){
         document.getElementById('loading-screen').classList.add('hidden');
@@ -104,10 +102,11 @@ setTimeout(() => {
     }
 }, 2500);
 
-try { if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); } catch(e){console.error(e);}
+try { if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); } catch(e){}
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+/** 2. DB SERVICE **/
 const dbService = {
     cleanNum: (val) => {
         if (typeof val === 'number') return val;
@@ -115,62 +114,57 @@ const dbService = {
         return parseFloat(String(val).replace(/,/g, '')) || 0;
     },
 
-    saveDaily: async (store, date, metrics) => {
-        // metrics = array of items from daily file
-        // Save as separate document per day per store
+    // Updated saveDaily to accept total values explicitly
+    saveDaily: async (store, date, metrics, totals) => {
         await db.collection('kpi_daily').doc(`${date}_${store}`).set({
-            storeCode: store, date, metrics, updatedAt: new Date()
+            storeCode: store, 
+            date, 
+            metrics, // Breakdown items
+            totals,  // Explicit totals from G16, F21
+            updatedAt: new Date()
         }, {merge: true});
     },
 
     saveStoreRecap: async (record) => {
-        // record = { storeCode, saleDateKeyYmd, tesp, ... }
         await db.collection('store_recap').doc(`${record.saleDateKeyYmd}_${record.storeCode}`).set(record, {merge: true});
     },
-
+    
+    // Logic to fetch report data
     getReportData: async (store, start, end) => {
         try {
-            // Fetch Daily KPI
-            const kpiSnap = await db.collection('kpi_daily')
+            const snap = await db.collection('kpi_daily')
                 .where('storeCode', '==', store)
                 .where('date', '>=', start)
                 .where('date', '<=', end)
                 .get();
             
             const data = {};
-            
-            kpiSnap.forEach(doc => {
+            snap.forEach(doc => {
                 const d = doc.data();
-                // Sum up values
-                let tesp = 0, tx = 0, bb = 0, newMem = 0;
-                const breakdown = [];
-
-                if(d.metrics) {
-                    d.metrics.forEach(m => {
-                        tesp += (m.tesp || 0);
-                        tx += (m.tx || 0);
-                        bb += (m.bb || 0);
-                        newMem += (m.newMember || 0);
-                        
-                        // Keep top items for Weekly Breakdown
-                        if(m.tesp > 0) breakdown.push(m);
-                    });
+                
+                // Priority: Use explicit totals if available (from G16/F21), else sum metrics
+                let tesp = d.totals?.tesp || 0;
+                let tx = d.totals?.tx || 0;
+                
+                // Fallback aggregation if totals not present (for old data)
+                if (!d.totals) {
+                    if(d.metrics) d.metrics.forEach(m => { tesp += (m.tesp||0); tx += (m.tx||0); });
                 }
 
-                // Sort breakdown by TESP desc
-                breakdown.sort((a,b) => b.tesp - a.tesp);
+                // ATV Calculation
+                const atv = tx > 0 ? tesp / tx : 0;
+                
+                // Breakdown for Weekly View
+                let breakdown = [];
+                if(d.metrics) {
+                    // Sort by TESP and take top items
+                    breakdown = d.metrics.sort((a,b) => (b.tesp||0) - (a.tesp||0)).slice(0, 5);
+                }
 
-                data[d.date] = {
-                    tesp, tx, bb, newMem,
-                    atv: tx > 0 ? tesp/tx : 0,
-                    breakdown: breakdown.slice(0, 5) // Top 5 for display
-                };
+                data[d.date] = { tesp, tx, atv, breakdown };
             });
-
             return { ok: true, data };
-        } catch(e) {
-            return { ok: false, msg: e.message };
-        }
+        } catch(e) { return { ok: false, msg: e.message }; }
     }
 };
 
@@ -179,30 +173,23 @@ const authService = {
     logout: () => auth.signOut().then(() => location.reload())
 };
 
-/**
- * ==========================================
- * 2. FILE PROCESSOR (Revised Logic)
- * ==========================================
- */
+/** 3. FILE PROCESSOR (Updated Logic) **/
 const processor = {
     process: async (files, type) => {
-        ui.loading(true, `Processing ${files.length} files...`);
-        let success = 0, fail = 0, errors = [];
-
+        ui.loading(true);
+        let success = 0, fail = 0;
         for(let f of files) {
             try {
                 const ext = f.name.split('.').pop().toLowerCase();
                 const buffer = await f.arrayBuffer();
-                
                 if(ext === 'zip') {
                     const zip = new JSZip();
                     const content = await zip.loadAsync(buffer);
                     for(let name in content.files) {
                         if(!content.files[name].dir && name.match(/\.(xls|xlsx)$/i)) {
-                            // Filter files inside ZIP
                             if(type==='storeRecap' && !name.toLowerCase().includes('storerecap')) continue;
-                            const zipData = await content.files[name].async("arraybuffer");
-                            await processor.parseExcel(zipData, type, name);
+                            const d = await content.files[name].async("arraybuffer");
+                            await processor.parseExcel(d, type, name);
                             success++;
                         }
                     }
@@ -210,117 +197,101 @@ const processor = {
                     await processor.parseExcel(buffer, type, f.name);
                     success++;
                 }
-            } catch(e) {
-                fail++;
-                errors.push(`${f.name}: ${e.message}`);
-                console.error(e);
-            }
+            } catch(e) { fail++; console.error(e); }
         }
-        
         ui.loading(false);
-        alert(`Completed: ${success}, Failed: ${fail}\n${errors.join('\n')}`);
+        alert(`Completed: ${success}, Failed: ${fail}`);
         if(success > 0) ui.nav('report');
     },
 
     parseExcel: async (buffer, type, fname) => {
         const wb = XLSX.read(buffer, {type:'array'});
         const ws = wb.Sheets[wb.SheetNames[0]];
-        
-        if(type === 'daily') {
-            await processor.parseDaily(ws, fname);
-        } else if(type === 'storeRecap') {
-            await processor.parseRecap(ws, fname);
-        } else if(type === 'saleByDept') {
-            // Logic for SaleByDept here
-        } else if(type === 'storeMaster') {
-            // Logic for Master
-        }
+        if(type === 'daily') await processor.parseDaily(ws, fname);
+        else if(type === 'storeRecap') await processor.parseRecap(ws, fname);
     },
 
-    // --- REVISED DAILY KPI PARSER ---
+    // --- NEW DAILY KPI PARSER LOGIC ---
     parseDaily: async (ws, fname) => {
-        // Convert to Array of Arrays for safe index access
         const rows = XLSX.utils.sheet_to_json(ws, {header:1});
         
-        // Find Header Row "Key KPI"
-        const hIdx = rows.findIndex(r => r && r[4] === 'Key KPI');
-        if(hIdx === -1) throw new Error("Invalid Daily KPI Format");
-
-        // Meta Data
+        // 1. Metadata
         const store = String(rows[1]?.[1] || '4340').trim();
         const dateStr = processor.fmtDate(rows[2]?.[1]);
 
-        // Column Indices (0-based from array)
-        // User requirement: BB=3, TESP=8, NewMem=11, Tx=13
-        // Array index: A=0, B=1, C=2, D=3...
-        const idxName = 4;
-        const idxBB = 3;
-        const idxTESP = 8; 
-        const idxNewMem = 11; 
-        const idxTx = 13; 
+        // 2. Get Totals from Specific Cells (Indices are 0-based)
+        // G16 -> Row 16 (Index 15), Col G (Index 6)
+        // F21 -> Row 21 (Index 20), Col F (Index 5)
+        // Note: Check bounds
+        let totalTESP = 0;
+        let totalTx = 0;
 
-        const data = [];
-        for(let i=hIdx+1; i<rows.length; i++) {
-            const r = rows[i];
-            if(!r || !r[idxName]) continue;
+        try {
+            // Try reading G16
+            if(rows[15] && rows[15][6] !== undefined) totalTESP = dbService.cleanNum(rows[15][6]);
+            // Try reading F21
+            if(rows[20] && rows[20][5] !== undefined) totalTx = dbService.cleanNum(rows[20][5]);
+        } catch(e) { console.warn("Could not read specific total cells", e); }
 
-            const tesp = dbService.cleanNum(r[idxTESP]);
-            const tx = dbService.cleanNum(r[idxTx]);
-            const atv = tx > 0 ? tesp/tx : 0;
-
-            data.push({
-                kpiName: r[idxName],
-                bb: dbService.cleanNum(r[idxBB]),
-                tesp: tesp,
-                newMember: dbService.cleanNum(r[idxNewMem]),
-                tx: tx,
-                atv: parseFloat(atv.toFixed(2))
-            });
+        // 3. Parse Breakdown List
+        const hIdx = rows.findIndex(r => r && r[4] === 'Key KPI');
+        const metrics = [];
+        if(hIdx !== -1) {
+            // Columns: Name=4, BB=3, TESP=8, NewMem=11, Tx=13
+            for(let i=hIdx+1; i<rows.length; i++) {
+                const r = rows[i];
+                if(!r || !r[4]) continue;
+                metrics.push({
+                    kpiName: r[4],
+                    bb: dbService.cleanNum(r[3]),
+                    tesp: dbService.cleanNum(r[8]),
+                    newMember: dbService.cleanNum(r[11]),
+                    tx: dbService.cleanNum(r[13])
+                });
+            }
+        }
+        
+        // If specific cells failed (e.g. file format changed), fallback to aggregation
+        if(totalTESP === 0 && metrics.length > 0) {
+             metrics.forEach(m => totalTESP += m.tesp);
+        }
+        if(totalTx === 0 && metrics.length > 0) {
+             metrics.forEach(m => totalTx += m.tx);
         }
 
-        await dbService.saveDaily(store, dateStr, data);
+        await dbService.saveDaily(store, dateStr, metrics, { tesp: totalTESP, tx: totalTx });
     },
 
-    // --- REVISED RECAP PARSER ---
     parseRecap: async (ws, fname) => {
-        // Heuristic Search
-        const find = (key, offsetCol=1) => {
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for(let r=range.s.r; r<=range.e.r; r++) {
-                for(let c=range.s.c; c<=range.e.c; c++) {
-                    const cell = ws[XLSX.utils.encode_cell({r,c})];
-                    if(cell && String(cell.v).trim() === key) {
-                        // Look ahead
-                        for(let k=1; k<=15; k++) {
-                            const valCell = ws[XLSX.utils.encode_cell({r, c:c+k})];
-                            if(valCell && (typeof valCell.v === 'number' || String(valCell.v).match(/^[0-9,.]+$/))) {
-                                return dbService.cleanNum(valCell.v);
-                            }
-                        }
+        // Simplified Recap logic (same as V8 but safe)
+        let dateTxt = "";
+        for(let r=0;r<5;r++){for(let c=0;c<20;c++){
+            const cell = ws[XLSX.utils.encode_cell({r,c})];
+            if(cell && String(cell.v).includes('-')){dateTxt=cell.v; break;}
+        }}
+        if(!dateTxt) throw new Error("Date not found");
+        const [d1] = dateTxt.split('-').map(s=>s.trim());
+        const parts = d1.split('/');
+        const ymd = parts[2]+parts[1]+parts[0];
+        
+        // Basic Value Finder
+        const find=(k)=>{
+            const range=XLSX.utils.decode_range(ws['!ref']);
+            for(let r=range.s.r;r<=range.e.r;r++){for(let c=range.s.c;c<=range.e.c;c++){
+                const cell=ws[XLSX.utils.encode_cell({r,c})];
+                if(cell && String(cell.v).trim()===k){
+                    for(let i=1;i<15;i++){
+                        const v=ws[XLSX.utils.encode_cell({r,c:c+i})];
+                        if(v && !isNaN(parseFloat(String(v.v).replace(/,/g,'')))) return dbService.cleanNum(v.v);
                     }
                 }
-            }
-            return 0;
+            }} return 0;
         };
-
-        const storeCode = '4340'; // Simplify detection
-        // Date logic...
-        let dateStr = "2025-11-15"; // Default fallback
-        // Try find date cell
-        // ...
-
-        const tesp = find('TESP');
-        const tespAfter = find('TESP AFTER COUPON');
-        // Customer often at AT17
-        const custCell = ws['AT17'] || ws['AU17'];
-        const customer = custCell ? dbService.cleanNum(custCell.v) : 0;
+        const tesp=find('TESP'); const tespAfter=find('TESP AFTER COUPON');
+        const c1=ws['AT17']||ws['AU17']; const cust=c1?dbService.cleanNum(c1.v):0;
         
-        const atv = customer > 0 ? tespAfter/customer : 0;
-
         await dbService.saveStoreRecap({
-            storeCode, 
-            saleDateKeyYmd: dateStr.replace(/-/g,''), 
-            tesp, tespAfter, customer, atv 
+            storeCode:'4340', saleDateKeyYmd: ymd, tesp, tespAfterCoupon: tespAfter, customer: cust, atv: cust>0?tespAfter/cust:0
         });
     },
 
@@ -334,18 +305,10 @@ const processor = {
     }
 };
 
-/**
- * ==========================================
- * 3. UI CONTROLLER (Report Views)
- * ==========================================
- */
+/** 4. UI CONTROLLER **/
 const ui = {
-    state: { 
-        viewDate: new Date('2025-11-01'), 
-        reportType: 'daily', 
-        reportView: 'monthly' // daily, weekly, monthly
-    },
-
+    state: { viewDate: new Date(), reportType: 'daily', reportView: 'monthly' },
+    
     init: () => {
         auth.onAuthStateChanged(user => {
             document.getElementById('loading-screen').classList.add('hidden');
@@ -358,20 +321,16 @@ const ui = {
                 document.getElementById('app-screen').classList.add('hidden');
             }
         });
-
         document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
-            try { 
-                await authService.login(document.getElementById('email').value, document.getElementById('password').value);
-            } catch(err) { alert(err.message); }
+            try { await authService.login(document.getElementById('email').value, document.getElementById('password').value); }
+            catch(err) { alert(err.message); }
         };
     },
 
     nav: (page) => {
         const content = document.getElementById('content-area');
         content.innerHTML = '';
-        
-        // Update Buttons
         const btnUp = document.getElementById('nav-upload');
         const btnRep = document.getElementById('nav-report');
         
@@ -388,218 +347,204 @@ const ui = {
 
     renderUpload: (area) => {
         const { reportType } = ui.state;
-        const btnCls = (t) => `block w-full text-left px-4 py-3 rounded-lg font-semibold transition ${reportType===t ? 'bg-chrome text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50'}`;
-
+        const btnCls = (t) => `block w-full text-left px-4 py-3 rounded-lg font-medium transition ${reportType===t ? 'bg-chrome text-white shadow':'bg-white text-gray-600 hover:bg-gray-50 border'}`;
         area.innerHTML = `
         <div class="flex flex-col md:flex-row gap-6 max-w-6xl mx-auto animate-fade">
             <div class="w-full md:w-1/4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Import Type</h3>
                 <button class="${btnCls('daily')}" onclick="ui.setType('daily')">Daily Sale KPI</button>
                 <button class="${btnCls('weekly')}" onclick="ui.setType('weekly')">Weekly Sale KPI</button>
                 <button class="${btnCls('storeRecap')}" onclick="ui.setType('storeRecap')">Store Recap</button>
-                <button class="${btnCls('saleByDept')}" onclick="ui.setType('saleByDept')">Sale By Dept</button>
-                <div class="h-px bg-gray-300 my-2"></div>
-                <button class="${btnCls('storeMaster')}" onclick="ui.setType('storeMaster')">Store Master</button>
             </div>
-            <div class="w-full md:w-3/4 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Upload ${reportType}</h2>
-                <div class="border-2 border-dashed border-gray-300 rounded-xl h-48 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-blue-50 transition" onclick="document.getElementById('fIn').click()">
-                    <span class="text-sm font-bold">Click to select files</span>
+            <div class="w-full md:w-3/4 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm min-h-[400px]">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">Upload ${reportType}</h2>
+                <div class="border-2 border-dashed border-slate-300 rounded-xl h-48 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition" onclick="document.getElementById('fIn').click()">
+                    <span class="text-sm font-bold">Click to browse files</span>
                 </div>
                 <input type="file" id="fIn" class="hidden" multiple onchange="processor.process(this.files, ui.state.reportType)">
             </div>
         </div>`;
     },
-
     setType: (t) => { ui.state.reportType = t; ui.nav('upload'); },
-    
-    // --- REPORT RENDER LOGIC ---
+
+    // --- REPORT VIEWS ---
     renderReport: async (area) => {
-        const { reportView, viewDate } = ui.state;
-        const viewBtn = (v, l) => `<button onclick="ui.setView('${v}')" class="px-4 py-2 rounded-lg font-bold text-sm transition ${reportView===v?'bg-chrome text-white':'bg-white text-gray-600 border hover:bg-gray-50'}">${l}</button>`;
+        const { reportView } = ui.state;
+        const btn = (v,l) => `<button onclick="ui.setView('${v}')" class="px-4 py-2 text-sm rounded-lg transition ${reportView===v?'bg-chrome text-white':'bg-white border text-slate-600'}">${l}</button>`;
         
         area.innerHTML = `
-        <div class="max-w-7xl mx-auto animate-fade">
+        <div class="max-w-6xl mx-auto animate-fade">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Reports</h2>
+                <h2 class="text-2xl font-bold text-slate-800">Reports</h2>
                 <div class="flex gap-2">
-                    ${viewBtn('daily', 'Daily')}
-                    ${viewBtn('weekly', 'Weekly')}
-                    ${viewBtn('monthly', 'Monthly')}
+                    ${btn('daily', 'Daily')}
+                    ${btn('weekly', 'Weekly')}
+                    ${btn('monthly', 'Monthly')}
                 </div>
             </div>
-            <div id="report-body">Loading...</div>
+            <div id="report-content">Loading...</div>
         </div>`;
 
-        if(reportView === 'monthly') await ui.renderMonthlyView();
-        else if(reportView === 'weekly') await ui.renderWeeklyView();
-        else await ui.renderDailyView();
+        if(reportView === 'monthly') ui.renderMonthly();
+        else if(reportView === 'weekly') ui.renderWeekly();
+        else ui.renderDaily();
     },
-
     setView: (v) => { ui.state.reportView = v; ui.nav('report'); },
 
-    // 1. MONTHLY VIEW
-    renderMonthlyView: async () => {
+    // 1. MONTHLY CALENDAR VIEW
+    renderMonthly: async () => {
         const d = ui.state.viewDate;
         const y = d.getFullYear(), m = d.getMonth();
-        const startStr = `${y}-${String(m+1).padStart(2,'0')}-01`;
-        const lastDay = new Date(y, m+1, 0).getDate();
-        const endStr = `${y}-${String(m+1).padStart(2,'0')}-${lastDay}`;
+        // Grid Logic (Sun - Sat)
+        const firstDayOfMonth = new Date(y, m, 1);
+        const lastDayOfMonth = new Date(y, m + 1, 0);
+        const startGrid = new Date(firstDayOfMonth); startGrid.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+        const endGrid = new Date(lastDayOfMonth); endGrid.setDate(lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay()));
 
-        const res = await dbService.getReportData('4340', startStr, endStr);
+        const sStr = processor.fmtDate(startGrid);
+        const eStr = processor.fmtDate(endGrid);
+        const res = await dbService.getReportData('4340', sStr, eStr);
         
         let html = `
         <div class="bg-white p-4 rounded-xl border shadow-sm mb-4 flex justify-between items-center">
             <h3 class="font-bold text-lg">${d.toLocaleString('default',{month:'long'})} ${y}</h3>
             <div class="flex gap-2">
-                <button onclick="ui.chgDate(-1, 'month')" class="px-3 py-1 border rounded hover:bg-gray-50">Prev</button>
-                <button onclick="ui.chgDate(1, 'month')" class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
+                <button onclick="ui.chgDate(-1,'month')" class="px-3 py-1 border rounded hover:bg-gray-50">Prev</button>
+                <button onclick="ui.chgDate(1,'month')" class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-gray-50 border-b">
-                    <tr><th class="p-4">Date</th><th class="p-4 text-right">TESP</th><th class="p-4 text-right">Tx</th><th class="p-4 text-right">ATV</th></tr>
-                </thead>
-                <tbody>`;
-        
-        if(!res.ok) html += `<tr><td colspan="4" class="p-6 text-center text-red-500">${res.msg}</td></tr>`;
-        else {
-            for(let i=1; i<=lastDay; i++) {
-                const dayKey = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                const r = res.data[dayKey];
-                const dateObj = new Date(dayKey);
-                const dayName = dateObj.toLocaleDateString('en-US', {weekday:'short'});
-                
-                // Highlight Sunday
-                const isSun = dateObj.getDay() === 0 ? 'text-red-500' : 'text-gray-500';
+        <div class="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-gray-400 uppercase">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="grid grid-cols-7 gap-2">`;
 
-                if(r) {
-                    html += `<tr class="border-b hover-row">
-                        <td class="p-4 font-medium flex gap-2"><span class="${isSun} w-8">${dayName}</span> ${i}</td>
-                        <td class="p-4 text-right font-bold text-gray-800">${r.tesp.toLocaleString()}</td>
-                        <td class="p-4 text-right text-gray-600">${r.tx}</td>
-                        <td class="p-4 text-right text-blue-600">${r.atv.toFixed(0)}</td>
-                    </tr>`;
-                } else {
-                    html += `<tr class="border-b hover-row"><td class="p-4 flex gap-2"><span class="${isSun} w-8">${dayName}</span> ${i}</td><td colspan="3" class="p-4 text-center text-xs text-gray-300">No Data</td></tr>`;
-                }
+        let loop = new Date(startGrid);
+        while(loop <= endGrid) {
+            const k = processor.fmtDate(loop);
+            const r = res.data[k];
+            const isCurr = loop.getMonth() === m;
+            const bg = isCurr ? 'bg-white' : 'bg-gray-50 opacity-60';
+            
+            html += `<div class="${bg} border rounded-lg p-2 min-h-[100px] flex flex-col relative hover-card transition">
+                <span class="text-xs font-bold text-gray-500 mb-1">${loop.getDate()}</span>`;
+            
+            if(r) {
+                html += `
+                <div class="mt-auto text-right space-y-1">
+                    <div class="text-xs text-gray-400">TESP <span class="text-slate-800 font-bold block">${r.tesp.toLocaleString()}</span></div>
+                    <div class="text-[10px] text-gray-400">Tx: ${r.tx}</div>
+                    <div class="text-[10px] text-blue-600 font-bold bg-blue-50 rounded px-1 inline-block">ATV: ${r.atv.toFixed(2)}</div>
+                </div>`;
+            } else if(isCurr && loop < new Date()) {
+                html += `<div class="flex-1 flex items-center justify-center"><span class="text-[10px] text-red-400 bg-red-50 px-1 rounded">Missing</span></div>`;
             }
+            html += `</div>`;
+            loop.setDate(loop.getDate() + 1);
         }
-        html += `</tbody></table></div>`;
-        document.getElementById('report-body').innerHTML = html;
+        html += `</div>`;
+        document.getElementById('report-content').innerHTML = html;
     },
 
     // 2. WEEKLY VIEW (Expanded)
-    renderWeeklyView: async () => {
+    renderWeekly: async () => {
         const d = ui.state.viewDate;
-        const day = d.getDay(); // 0=Sun
-        const start = new Date(d); start.setDate(d.getDate() - day);
-        const end = new Date(start); end.setDate(start.getDate() + 6);
+        const day = d.getDay(); 
+        const start = new Date(d); start.setDate(d.getDate() - day); // Sun
+        const end = new Date(start); end.setDate(start.getDate() + 6); // Sat
         
         const sStr = processor.fmtDate(start);
         const eStr = processor.fmtDate(end);
-
         const res = await dbService.getReportData('4340', sStr, eStr);
-        
+
         let html = `
         <div class="bg-white p-4 rounded-xl border shadow-sm mb-4 flex justify-between items-center">
             <h3 class="font-bold text-lg">Week: ${sStr} to ${eStr}</h3>
             <div class="flex gap-2">
-                <button onclick="ui.chgDate(-7, 'day')" class="px-3 py-1 border rounded hover:bg-gray-50">Prev Wk</button>
-                <button onclick="ui.chgDate(7, 'day')" class="px-3 py-1 border rounded hover:bg-gray-50">Next Wk</button>
+                <button onclick="ui.chgDate(-7,'day')" class="px-3 py-1 border rounded">Prev Wk</button>
+                <button onclick="ui.chgDate(7,'day')" class="px-3 py-1 border rounded">Next Wk</button>
             </div>
         </div>
         <div class="space-y-4">`;
 
-        if(!res.ok) { html += `<p class="text-red-500">${res.msg}</p>`; }
-        else {
-            for(let i=0; i<7; i++) {
-                const cur = new Date(start); cur.setDate(start.getDate()+i);
-                const k = processor.fmtDate(cur);
-                const r = res.data[k];
-                
-                html += `<div class="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition">
-                    <div class="flex justify-between items-center mb-3 border-b pb-2">
-                        <span class="font-bold text-lg text-gray-800">${cur.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'short'})}</span>
-                        ${r ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Complete</span>' : '<span class="bg-gray-100 text-gray-400 px-2 py-1 rounded text-xs">Missing</span>'}
-                    </div>`;
-                
-                if(r) {
-                    // Top Row
-                    html += `<div class="grid grid-cols-4 gap-4 mb-4 text-sm">
-                        <div class="text-center"><div class="text-xs text-gray-400">TESP</div><div class="font-bold text-lg">${r.tesp.toLocaleString()}</div></div>
-                        <div class="text-center"><div class="text-xs text-gray-400">Tx</div><div class="font-bold text-lg">${r.tx}</div></div>
-                        <div class="text-center"><div class="text-xs text-gray-400">ATV</div><div class="font-bold text-lg text-blue-600">${r.atv.toFixed(0)}</div></div>
-                        <div class="text-center"><div class="text-xs text-gray-400">New Mem</div><div class="font-bold text-lg text-green-600">${r.newMem}</div></div>
-                    </div>
-                    <!-- Breakdown (Expand area) -->
-                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <p class="text-xs font-bold text-gray-500 uppercase mb-2">Top Contributors</p>
-                        <div class="grid grid-cols-1 gap-1 text-sm">`;
-                        if(r.breakdown) {
-                            r.breakdown.forEach(b => {
-                                html += `<div class="flex justify-between"><span class="text-gray-600">${b.kpiName}</span> <span class="font-medium">${b.tesp.toLocaleString()}</span></div>`;
-                            });
-                        }
-                    html += `</div></div>`;
-                } else {
-                    html += `<div class="text-center text-gray-300 py-4">No Data</div>`;
-                }
+        for(let i=0; i<7; i++) {
+            const cur = new Date(start); cur.setDate(start.getDate()+i);
+            const k = processor.fmtDate(cur);
+            const r = res.data[k];
+            
+            html += `<div class="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <span class="font-bold text-slate-800">${cur.toLocaleDateString('en-US', {weekday:'long', day:'numeric'})}</span>
+                    ${r ? '<span class="text-green-600 text-xs bg-green-100 px-2 rounded font-bold">Complete</span>' : ''}
+                </div>`;
+            
+            if(r) {
+                html += `
+                <div class="grid grid-cols-3 gap-4 text-sm mb-3">
+                    <div class="text-center"><div class="text-xs text-gray-400">TESP</div><div class="font-bold text-lg">${r.tesp.toLocaleString()}</div></div>
+                    <div class="text-center"><div class="text-xs text-gray-400">Tx</div><div class="font-bold text-lg">${r.tx}</div></div>
+                    <div class="text-center"><div class="text-xs text-gray-400">ATV</div><div class="font-bold text-blue-600 text-lg">${r.atv.toFixed(2)}</div></div>
+                </div>
+                <!-- Breakdown Expansion -->
+                <div class="bg-slate-50 rounded p-2 text-xs">
+                    <p class="font-bold text-gray-500 uppercase mb-1">Top Items:</p>`;
+                    if(r.breakdown) r.breakdown.forEach(b => {
+                        html += `<div class="flex justify-between py-1 border-b border-slate-200 last:border-0"><span>${b.kpiName}</span><span class="font-medium">${b.tesp.toLocaleString()}</span></div>`;
+                    });
                 html += `</div>`;
+            } else {
+                html += `<div class="text-center text-gray-300 py-4 text-sm">No Data</div>`;
             }
+            html += `</div>`;
         }
         html += `</div>`;
-        document.getElementById('report-body').innerHTML = html;
+        document.getElementById('report-content').innerHTML = html;
     },
 
     // 3. DAILY VIEW
-    renderDailyView: async () => {
+    renderDaily: async () => {
         const d = ui.state.viewDate;
-        const ds = processor.fmtDate(d);
-        const res = await dbService.getReportData('4340', ds, ds);
-        const r = res.ok ? res.data[ds] : null;
-
+        const k = processor.fmtDate(d);
+        const res = await dbService.getReportData('4340', k, k);
+        const r = res.data[k];
+        
         let html = `
         <div class="bg-white p-4 rounded-xl border shadow-sm mb-4 flex justify-between items-center">
-            <h3 class="font-bold text-lg">${d.toLocaleDateString('en-US',{weekday:'long', day:'numeric', month:'long', year:'numeric'})}</h3>
+            <h3 class="font-bold text-lg">${d.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</h3>
             <div class="flex gap-2">
-                <button onclick="ui.chgDate(-1, 'day')" class="px-3 py-1 border rounded hover:bg-gray-50">Prev Day</button>
-                <button onclick="ui.chgDate(1, 'day')" class="px-3 py-1 border rounded hover:bg-gray-50">Next Day</button>
+                <button onclick="ui.chgDate(-1,'day')" class="px-3 py-1 border rounded">Prev</button>
+                <button onclick="ui.chgDate(1,'day')" class="px-3 py-1 border rounded">Next</button>
             </div>
         </div>`;
 
         if(r) {
             html += `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-6 rounded-xl border shadow-sm text-center">
-                    <p class="text-gray-400 text-xs font-bold uppercase">Total Sales</p>
-                    <p class="text-4xl font-bold text-blue-600 mt-2">${r.tesp.toLocaleString()}</p>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm">
+                    <div class="text-xs text-gray-400 uppercase font-bold">Total Sales</div>
+                    <div class="text-3xl font-bold text-blue-600 mt-2">${r.tesp.toLocaleString()}</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl border shadow-sm text-center">
-                    <p class="text-gray-400 text-xs font-bold uppercase">Transactions</p>
-                    <p class="text-4xl font-bold text-gray-800 mt-2">${r.tx}</p>
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm">
+                    <div class="text-xs text-gray-400 uppercase font-bold">Transactions</div>
+                    <div class="text-3xl font-bold text-slate-700 mt-2">${r.tx}</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl border shadow-sm text-center">
-                    <p class="text-gray-400 text-xs font-bold uppercase">Boots Brand</p>
-                    <p class="text-4xl font-bold text-green-600 mt-2">${r.bb.toLocaleString()}</p>
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm">
+                    <div class="text-xs text-gray-400 uppercase font-bold">ATV</div>
+                    <div class="text-3xl font-bold text-green-600 mt-2">${r.atv.toFixed(2)}</div>
                 </div>
             </div>
-            
             <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b bg-gray-50 font-bold text-gray-700">Detailed Breakdown</div>
-                <table class="w-full text-left">
-                    <thead class="border-b"><tr><th class="p-4">KPI Name</th><th class="p-4 text-right">TESP</th><th class="p-4 text-right">Tx</th></tr></thead>
+                <div class="bg-gray-50 px-4 py-3 border-b font-bold text-sm text-gray-700">Detailed Breakdown</div>
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-white border-b"><tr><th class="p-3 pl-4">Name</th><th class="p-3 text-right pr-4">TESP</th></tr></thead>
                     <tbody>`;
-                    if(r.breakdown) {
-                        r.breakdown.forEach(b => {
-                            html += `<tr class="border-b hover-row"><td class="p-4">${b.kpiName}</td><td class="p-4 text-right font-medium">${b.tesp.toLocaleString()}</td><td class="p-4 text-right text-gray-600">${b.tx}</td></tr>`;
-                        });
-                    }
+                    if(r.breakdown) r.breakdown.forEach(b => {
+                        html += `<tr class="border-b last:border-0 hover:bg-gray-50"><td class="p-3 pl-4 text-slate-700">${b.kpiName}</td><td class="p-3 pr-4 text-right font-mono">${b.tesp.toLocaleString()}</td></tr>`;
+                    });
             html += `</tbody></table></div>`;
         } else {
-            html += `<div class="text-center py-20 bg-white rounded-xl border text-gray-400">No Data for this date</div>`;
+            html += `<div class="text-center py-10 bg-white border rounded-xl text-gray-400">No Data Available</div>`;
         }
-        document.getElementById('report-body').innerHTML = html;
+        document.getElementById('report-content').innerHTML = html;
     },
 
     chgDate: (n, type) => {
@@ -607,16 +552,19 @@ const ui = {
         if(type === 'month') d.setMonth(d.getMonth() + n);
         else d.setDate(d.getDate() + n);
         ui.state.viewDate = new Date(d);
-        ui.nav('report'); // Refresh
+        if(ui.state.reportView === 'monthly') ui.renderMonthly();
+        else if(ui.state.reportView === 'weekly') ui.renderWeekly();
+        else ui.renderDaily();
     },
     
-    loading: (s, t) => {
+    loading: (s) => {
         const el = document.getElementById('loading-screen');
-        if(s) el.classList.remove('hidden'); else el.classList.add('hidden');
+        if(s) { el.classList.remove('hidden'); el.querySelector('p').innerText="Processing..."; }
+        else el.classList.add('hidden');
     }
 };
 
-// Initialize App
+// START
 ui.init();
 </script>
 </body>
