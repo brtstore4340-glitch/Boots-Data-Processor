@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI System Downloader V8.3</title>
+    <title>KPI System Downloader V12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
-        .progress-bar { transition: width 0.3s ease-out; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -19,136 +18,90 @@
 
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden fade-in">
         <div class="bg-slate-900 p-6 flex items-center gap-4">
-            <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <div class="w-12 h-12 bg-rose-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
             <div>
-                <h1 class="text-xl font-bold text-white">KPI System V8.3</h1>
-                <p class="text-xs text-slate-400">Pro Upload UI & Summary</p>
+                <h1 class="text-xl font-bold text-white">KPI System V12</h1>
+                <p class="text-xs text-slate-400">Fixed: Tx Column & Zero Alerts (!)</p>
             </div>
         </div>
 
         <div class="p-8">
             <div id="view-initial">
-                <div class="bg-indigo-50 rounded-xl p-5 mb-6 border border-indigo-100">
-                    <h3 class="text-xs font-bold text-indigo-800 uppercase mb-2 tracking-wider">Updates:</h3>
-                    <ul class="text-xs text-indigo-700 space-y-1.5 list-disc pl-4 leading-relaxed">
-                        <li><strong>UI:</strong> Per-file Progress Bars.</li>
-                        <li><strong>UX:</strong> Professional Summary Modal.</li>
-                        <li><strong>Core:</strong> Retains V11 Precise Logic (G16, F21).</li>
+                <div class="bg-rose-50 rounded-xl p-5 mb-6 border border-rose-100">
+                    <h3 class="text-xs font-bold text-rose-800 uppercase mb-2 tracking-wider">Updates:</h3>
+                    <ul class="text-xs text-rose-700 space-y-1.5 list-disc pl-4 leading-relaxed">
+                        <li><strong>Daily Report:</strong> Added <strong>Tx</strong> column back to table.</li>
+                        <li><strong>Visual Alert:</strong> <strong>Red Color & (!)</strong> if Tx/ATV is 0.</li>
+                        <li><strong>Core:</strong> Retains V11 precise cell mapping.</li>
                     </ul>
                 </div>
-                <button onclick="startDownload()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg">
-                    <span>Download System V8.3</span>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <button onclick="startDownload()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg">
+                    <span>Download V12</span>
                 </button>
             </div>
 
             <div id="view-progress" class="hidden space-y-6">
                 <div class="text-center">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mx-auto mb-3"></div>
-                    <p class="text-sm font-medium text-slate-600">Building Application...</p>
+                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-rose-600 border-t-transparent mx-auto mb-3"></div>
+                    <p class="text-sm font-medium text-slate-600">Generating V12...</p>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between text-xs text-slate-500">
-                        <span>Progress</span>
-                        <span id="pct">0%</span>
-                    </div>
-                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div id="main-progress" class="h-full bg-indigo-500 progress-bar w-0"></div>
-                    </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="main-progress" class="h-full bg-rose-600 transition-all duration-100 w-0"></div>
                 </div>
                 <div id="msg-complete" class="hidden text-center pt-2">
                     <p class="text-sm font-bold text-slate-800">Download Complete!</p>
-                    <p class="text-xs text-slate-400">Check your downloads folder.</p>
+                    <p class="text-xs text-slate-400">Extract and run index.html</p>
                 </div>
             </div>
         </div>
     </div>
 
-<!-- TEMPLATE STORAGE -->
+<!-- SOURCE CODE TEMPLATE -->
 <script type="text/template" id="kpi-source-code">
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI System V8.3</title>
+    <title>KPI System V12</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: #f0f2f5; }
         .bg-chrome { background-color: #1a73e8; } 
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        .progress-bar { transition: width 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        tr:hover td { background-color: #f8fafc; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800">
-
-    <!-- Summary Modal -->
-    <div id="summary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div class="bg-slate-900 p-5 text-white flex justify-between items-center">
-                <h3 class="text-lg font-bold flex items-center gap-2">
-                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Upload Complete
-                </h3>
-                <button onclick="document.getElementById('summary-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-green-50 p-4 rounded-xl text-center border border-green-100">
-                        <p class="text-xs text-green-600 font-bold uppercase">Success</p>
-                        <p class="text-3xl font-bold text-green-700" id="sum-success">0</p>
-                    </div>
-                    <div class="bg-red-50 p-4 rounded-xl text-center border border-red-100">
-                        <p class="text-xs text-red-600 font-bold uppercase">Failed</p>
-                        <p class="text-3xl font-bold text-red-700" id="sum-fail">0</p>
-                    </div>
-                </div>
-                <div id="sum-errors" class="hidden">
-                    <p class="text-xs font-bold text-red-500 mb-2">Error Details:</p>
-                    <div class="bg-slate-50 p-3 rounded-lg text-xs text-red-600 max-h-32 overflow-y-auto space-y-1 border border-slate-100" id="sum-error-list"></div>
-                </div>
-                <button onclick="document.getElementById('summary-modal').classList.add('hidden'); ui.nav('report');" class="w-full mt-6 bg-chrome text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">
-                    Go to Reports
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
         <p class="text-gray-500 font-medium text-sm">Loading System...</p>
     </div>
-    
-    <!-- Login -->
     <div id="login-screen" class="hidden fixed inset-0 bg-gray-100 z-40 flex items-center justify-center">
         <div class="bg-white p-10 rounded-2xl shadow-xl w-96">
             <h1 class="text-2xl font-bold text-center mb-6">KPI Login</h1>
             <form id="login-form" class="space-y-4">
-                <input type="email" id="email" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500" placeholder="Email" value="admin@kpi.com" required>
-                <input type="password" id="password" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500" placeholder="Password" value="admin1234" required>
+                <input type="email" id="email" class="w-full p-3 border rounded-lg" placeholder="Email" value="admin@kpi.com" required>
+                <input type="password" id="password" class="w-full p-3 border rounded-lg" placeholder="Password" value="admin1234" required>
                 <button type="submit" class="w-full bg-chrome text-white py-3 rounded-lg font-bold">Sign In</button>
             </form>
         </div>
     </div>
-    
-    <!-- App -->
     <div id="app-screen" class="hidden flex-1 flex flex-col h-full">
         <nav class="bg-white shadow-sm border-b h-16 shrink-0 px-6 flex justify-between items-center z-10">
-            <div class="font-bold text-xl text-gray-800 flex items-center gap-2"><span class="text-blue-600">KPI</span> V8.3</div>
+            <div class="font-bold text-xl text-gray-800 flex items-center gap-2"><span class="text-blue-600">KPI</span> V12</div>
             <div class="flex gap-2 bg-gray-100 p-1 rounded-lg">
-                <button onclick="ui.nav('upload')" id="nav-upload" class="px-5 py-1.5 rounded-md text-sm font-bold transition">Upload</button>
-                <button onclick="ui.nav('report')" id="nav-report" class="px-5 py-1.5 rounded-md text-sm font-bold transition">Report</button>
+                <button onclick="ui.nav('upload')" id="nav-upload" class="px-5 py-1.5 rounded-md text-sm font-bold">Upload</button>
+                <button onclick="ui.nav('report')" id="nav-report" class="px-5 py-1.5 rounded-md text-sm font-bold">Report</button>
             </div>
             <button onclick="authService.logout()" class="text-sm text-red-500 hover:underline">Logout</button>
         </nav>
@@ -183,59 +136,38 @@ const dbService={
 
 const authService={login:async(e,p)=>await auth.signInWithEmailAndPassword(e,p),logout:()=>auth.signOut().then(()=>location.reload())};
 
-// --- PROCESSOR WITH PROGRESS ---
 const processor={
     process:async(files,type)=>{
-        // Initialize Progress UI
-        document.getElementById('file-progress-list').innerHTML = ui.buildFileList(files);
-        
-        let s=0,f=0,errs=[];
-        for(let i=0; i<files.length; i++){
-            const file = files[i];
-            ui.updateFileStatus(i, 'processing', 10); // Start
-            
+        ui.loading(true); let s=0,f=0;
+        for(let file of files){
             try{
                 const buf=await file.arrayBuffer();
-                ui.updateFileStatus(i, 'processing', 50); // Reading
-                
                 const wb=XLSX.read(buf,{type:'array'});
                 const ws=wb.Sheets[wb.SheetNames[0]];
-                
                 if(type==='daily') await processor.parseDaily(ws,file.name);
                 else if(type==='storeRecap') await processor.parseRecap(ws,file.name);
-                
-                ui.updateFileStatus(i, 'success', 100); // Done
                 s++;
-            }catch(e){
-                f++;
-                errs.push(file.name+': '+e.message);
-                ui.updateFileStatus(i, 'failed', 0, e.message);
-                console.error(e);
-            }
-            await new Promise(r=>setTimeout(r,200)); // Slight delay for visual effect
+            }catch(e){f++;console.error(e);}
         }
-        
-        // Show Summary
-        ui.showSummary(s, f, errs);
+        ui.loading(false); alert('Done: '+s+' Success, '+f+' Failed'); if(s>0)ui.nav('report');
     },
-    // --- V11 PRECISE LOGIC (E6-G23) ---
     parseDaily:async(ws,fname)=>{
         const rows=XLSX.utils.sheet_to_json(ws,{header:1});
         const store=String(rows[1]?.[1]||'4340').trim();
         const dateStr=processor.fmtDate(rows[2]?.[1]);
 
+        // Force read from cells (V11 Logic)
         let totalTESP = ws['G16'] ? dbService.cleanNum(ws['G16'].v) : 0;
         let totalTx = ws['F21'] ? dbService.cleanNum(ws['F21'].v) : 0;
 
         const metrics=[];
-        for(let r=5; r<=22; r++){ 
-            const row = rows[r];
-            if(!row) continue;
-            const name = row[4];
-            if(!name) continue;
-            const qty = dbService.cleanNum(row[5]); 
-            const tesp = dbService.cleanNum(row[6]); 
-            metrics.push({kpiName: name, tx: qty, tesp: tesp});
+        const hIdx=rows.findIndex(r=>r&&r[4]==='Key KPI');
+        if(hIdx!==-1){
+            for(let r=hIdx+1; r<=22; r++){ // E6 is approx row 5 in array
+                const row = rows[r]; if(!row || !row[4]) continue;
+                // E=4(Name), F=5(Qty/Tx), G=6(TESP)
+                metrics.push({kpiName:row[4], tx:dbService.cleanNum(row[5]), tesp:dbService.cleanNum(row[6])});
+            }
         }
         await dbService.saveDaily(store,dateStr,metrics,{tesp:totalTESP, tx:totalTx});
     },
@@ -282,70 +214,24 @@ const ui={
     renderUpload:(c)=>{
         const t=ui.state.reportType;
         const cls=(x)=>`block w-full text-left px-4 py-3 rounded-lg font-medium transition ${t===x?'bg-chrome text-white shadow':'bg-white text-gray-600 hover:bg-gray-50 border'}`;
-        c.innerHTML=`<div class="flex gap-6 max-w-6xl mx-auto animate-fade"><div class="w-1/4 space-y-2"><button class="${cls('daily')}" onclick="ui.st('daily')">Daily KPI</button><button class="${cls('storeRecap')}" onclick="ui.st('storeRecap')">Store Recap</button></div><div class="w-3/4 bg-white p-8 rounded-2xl border shadow-sm"><h2 class="text-2xl font-bold mb-4">Upload ${t}</h2><input type="file" id="fIn" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" multiple onchange="processor.process(this.files,ui.state.reportType)"><div id="file-progress-list" class="mt-6 space-y-3"></div></div></div>`;
+        c.innerHTML=`<div class="flex gap-6 max-w-6xl mx-auto animate-fade"><div class="w-1/4 space-y-2"><button class="${cls('daily')}" onclick="ui.st('daily')">Daily KPI</button><button class="${cls('storeRecap')}" onclick="ui.st('storeRecap')">Store Recap</button></div><div class="w-3/4 bg-white p-8 rounded-2xl border shadow-sm"><h2 class="text-2xl font-bold mb-4">Upload ${t}</h2><input type="file" id="fIn" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" multiple onchange="processor.process(this.files,ui.state.reportType)"></div></div>`;
     },
     st:(t)=>{ui.state.reportType=t; ui.nav('upload');},
-    
-    // --- NEW PROGRESS UI HELPERS ---
-    buildFileList:(files)=>{
-        let h='';
-        for(let i=0; i<files.length; i++){
-            h+=`<div id="frow-${i}" class="border rounded-lg p-3 bg-slate-50 flex items-center justify-between">
-                <div class="flex items-center gap-3 w-2/3">
-                    <div id="ficon-${i}" class="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-gray-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
-                    <div class="min-w-0"><p class="text-sm font-medium truncate">${files[i].name}</p><div class="h-1.5 w-full bg-gray-200 rounded-full mt-1 overflow-hidden"><div id="fbar-${i}" class="h-full bg-blue-500 progress-bar w-0"></div></div></div>
-                </div>
-                <span id="fstat-${i}" class="text-xs font-bold text-gray-400">Pending</span>
-            </div>`;
-        }
-        return h;
-    },
-    updateFileStatus:(i, status, pct, msg)=>{
-        const row = document.getElementById(`frow-${i}`);
-        const bar = document.getElementById(`fbar-${i}`);
-        const stat = document.getElementById(`fstat-${i}`);
-        const icon = document.getElementById(`ficon-${i}`);
-        
-        if(status === 'processing') {
-            bar.style.width = pct + '%';
-            stat.className = 'text-xs font-bold text-blue-500';
-            stat.innerText = 'Processing...';
-        } else if(status === 'success') {
-            bar.style.width = '100%';
-            bar.classList.remove('bg-blue-500'); bar.classList.add('bg-green-500');
-            stat.className = 'text-xs font-bold text-green-600';
-            stat.innerText = 'Success';
-            icon.className = 'w-8 h-8 rounded bg-green-100 flex items-center justify-center text-green-600';
-            icon.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-        } else if(status === 'failed') {
-            bar.style.width = '100%';
-            bar.classList.remove('bg-blue-500'); bar.classList.add('bg-red-500');
-            stat.className = 'text-xs font-bold text-red-500';
-            stat.innerText = 'Failed';
-            row.insertAdjacentHTML('beforeend', `<div class="w-full text-[10px] text-red-500 mt-1 pl-11 col-span-3">${msg}</div>`);
-            row.classList.add('flex-wrap');
-        }
-    },
-    showSummary:(s, f, errs)=>{
-        document.getElementById('sum-success').innerText = s;
-        document.getElementById('sum-fail').innerText = f;
-        const list = document.getElementById('sum-error-list');
-        if(errs.length > 0) {
-            document.getElementById('sum-errors').classList.remove('hidden');
-            list.innerHTML = errs.map(e => `<p>• ${e}</p>`).join('');
-        } else {
-            document.getElementById('sum-errors').classList.add('hidden');
-        }
-        document.getElementById('summary-modal').classList.remove('hidden');
-    },
-
     renderReport:async(c)=>{
-        const {reportView,viewDate}=ui.state;
+        const {reportView}=ui.state;
         const btn=(v,l)=>`<button onclick="ui.sv('${v}')" class="px-4 py-2 text-sm rounded transition ${reportView===v?'bg-chrome text-white':'bg-white border text-gray-600'}">${l}</button>`;
         c.innerHTML=`<div class="max-w-6xl mx-auto animate-fade"><div class="flex justify-between mb-6"><h2 class="text-2xl font-bold">Reports</h2><div class="flex gap-2">${btn('monthly','Monthly')}${btn('weekly','Weekly')}${btn('daily','Daily')}</div></div><div id="rep-body">Loading...</div></div>`;
         if(reportView==='monthly') ui.renderMonthly(); else if(reportView==='weekly') ui.renderWeekly(); else ui.renderDaily();
     },
     sv:(v)=>{ui.state.reportView=v; ui.nav('report');},
+    
+    // Helper to format value with alert
+    fmtVal:(val, isAlert)=>{
+        const s = val.toLocaleString();
+        if(isAlert && val===0) return `<span class="text-red-600 font-bold">${s} (!)</span>`;
+        return s;
+    },
+
     renderMonthly:async()=>{
         const d=ui.state.viewDate; const y=d.getFullYear(); const m=d.getMonth();
         const startGrid=new Date(y,m,1); startGrid.setDate(startGrid.getDate()-startGrid.getDay());
@@ -357,7 +243,18 @@ const ui={
         while(loop<=endGrid){
             const k=processor.fmtDate(loop); const r=res.data[k]; const isC=loop.getMonth()===m;
             h+=`<div class="${isC?'bg-white':'bg-gray-50 opacity-50'} border rounded-lg p-2 min-h-[100px] flex flex-col transition hover:shadow-md"><span class="text-xs font-bold text-gray-500 mb-1">${loop.getDate()}</span>`;
-            if(r){ h+=`<div class="mt-auto text-right text-xs"><div class="text-gray-400">T: <span class="text-slate-800 font-bold">${r.tesp.toLocaleString()}</span></div><div class="text-[10px] text-blue-600 font-bold bg-blue-50 rounded px-1 inline-block mt-1">ATV: ${r.atv.toFixed(2)}</div></div>`; }
+            if(r){ 
+                // V12: Conditional formatting
+                const txStyle = r.tx===0 ? 'text-red-600 font-bold' : 'text-gray-400';
+                const atvStyle = r.atv===0 ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50';
+                const txAlert = r.tx===0 ? '(!)' : '';
+
+                h+=`<div class="mt-auto text-right text-xs">
+                    <div class="text-gray-400">T: <span class="text-slate-800 font-bold">${r.tesp.toLocaleString()}</span></div>
+                    <div class="text-[10px] ${txStyle}">Tx: ${r.tx} ${txAlert}</div>
+                    <div class="text-[10px] ${atvStyle} font-bold rounded px-1 inline-block mt-1">ATV: ${r.atv.toFixed(2)}</div>
+                </div>`; 
+            }
             h+=`</div>`; loop.setDate(loop.getDate()+1);
         }
         document.getElementById('rep-body').innerHTML=h+'</div>';
@@ -370,8 +267,11 @@ const ui={
         for(let i=0;i<7;i++){
             const cur=new Date(start); cur.setDate(start.getDate()+i); const k=processor.fmtDate(cur); const r=res.data[k];
             h+=`<div class="bg-white border rounded-xl p-4 shadow-sm"><div class="font-bold text-slate-800 mb-2 border-b pb-1">${cur.toLocaleDateString('en-US',{weekday:'long',day:'numeric'})}</div>`;
-            if(r){ h+=`<div class="grid grid-cols-3 gap-4 text-sm text-center"><div><div class="text-xs text-gray-400">TESP</div><div class="font-bold">${r.tesp.toLocaleString()}</div></div><div><div class="text-xs text-gray-400">Tx</div><div>${r.tx}</div></div><div><div class="text-xs text-gray-400">ATV</div><div class="font-bold text-blue-600">${r.atv.toFixed(2)}</div></div></div>`; 
-                   if(r.breakdown.length){ h+=`<div class="mt-2 bg-slate-50 p-2 rounded text-xs"><p class="font-bold text-gray-400 mb-1">Items:</p>`; r.breakdown.forEach(b=>h+=`<div class="flex justify-between border-b border-gray-200 last:border-0 py-1"><span>${b.kpiName}</span><span>${b.tesp.toLocaleString()}</span></div>`); h+=`</div>`;}
+            if(r){ 
+                 const txCls = r.tx===0 ? 'text-red-600' : 'text-slate-800';
+                 const atvCls = r.atv===0 ? 'text-red-600' : 'text-blue-600';
+                 h+=`<div class="grid grid-cols-3 gap-4 text-sm text-center"><div><div class="text-xs text-gray-400">TESP</div><div class="font-bold">${r.tesp.toLocaleString()}</div></div><div><div class="text-xs text-gray-400">Tx</div><div class="font-bold ${txCls}">${r.tx}${r.tx===0?' (!)':''}</div></div><div><div class="text-xs text-gray-400">ATV</div><div class="font-bold ${atvCls}">${r.atv.toFixed(2)}${r.atv===0?' (!)':''}</div></div></div>`; 
+                 if(r.breakdown.length){ h+=`<div class="mt-2 bg-slate-50 p-2 rounded text-xs"><p class="font-bold text-gray-400 mb-1">Items:</p>`; r.breakdown.forEach(b=>h+=`<div class="flex justify-between border-b border-gray-200 last:border-0 py-1"><span>${b.kpiName}</span><span>${b.tesp.toLocaleString()}</span></div>`); h+=`</div>`;}
             } else { h+=`<div class="text-center text-gray-300 py-2">No Data</div>`; }
             h+=`</div>`;
         }
@@ -382,8 +282,26 @@ const ui={
         const res=await dbService.getReportData('4340',k,k); const r=res.data[k];
         let h=`<div class="bg-white p-4 rounded-xl border shadow-sm mb-4 flex justify-between"><h3 class="font-bold text-lg">${d.toLocaleDateString()}</h3><div class="flex gap-2"><button onclick="ui.chg(-1,'d')" class="px-3 border rounded">Prev</button><button onclick="ui.chg(1,'d')" class="px-3 border rounded">Next</button></div></div>`;
         if(r){
-            h+=`<div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">Total Sales</div><div class="text-3xl font-bold text-blue-600 mt-2">${r.tesp.toLocaleString()}</div></div><div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">Tx</div><div class="text-3xl font-bold text-slate-700 mt-2">${r.tx}</div></div><div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">ATV</div><div class="text-3xl font-bold text-green-600 mt-2">${r.atv.toFixed(2)}</div></div></div>`;
-            if(r.breakdown.length) { h+=`<div class="bg-white p-4 rounded-xl border"><h4 class="font-bold mb-2">Details</h4>`; r.breakdown.forEach(b=>h+=`<div class="flex justify-between py-2 border-b"><span>${b.kpiName}</span><span>${b.tesp.toLocaleString()}</span></div>`); h+=`</div>`; }
+            // V12 Logic: Red if 0
+            const txColor = r.tx === 0 ? 'text-red-600' : 'text-slate-700';
+            const atvColor = r.atv === 0 ? 'text-red-600' : 'text-green-600';
+            const alertTxt = r.tx === 0 ? ' (!)' : '';
+
+            h+=`<div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">Total Sales</div><div class="text-3xl font-bold text-blue-600 mt-2">${r.tesp.toLocaleString()}</div></div>
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">Tx</div><div class="text-3xl font-bold ${txColor} mt-2">${r.tx}${alertTxt}</div></div>
+                <div class="bg-white p-6 rounded-xl border text-center shadow-sm"><div class="text-xs text-gray-400 uppercase font-bold">ATV</div><div class="text-3xl font-bold ${atvColor} mt-2">${r.atv.toFixed(2)}${alertTxt}</div></div>
+            </div>`;
+            if(r.breakdown.length) { 
+                // Added Tx Column to Detailed Breakdown as requested
+                h+=`<div class="bg-white p-4 rounded-xl border"><h4 class="font-bold mb-2">Details</h4>
+                <table class="w-full text-sm text-left"><thead class="bg-gray-50 border-b"><tr><th class="p-2">Name</th><th class="p-2 text-right">TESP</th><th class="p-2 text-right">Tx</th></tr></thead><tbody>`; 
+                r.breakdown.forEach(b=>{
+                    const rowTxStyle = b.tx===0 ? 'text-red-500' : 'text-gray-600';
+                    h+=`<tr class="border-b last:border-0 hover:bg-gray-50"><td class="p-2">${b.kpiName}</td><td class="p-2 text-right">${b.tesp.toLocaleString()}</td><td class="p-2 text-right ${rowTxStyle}">${b.tx}</td></tr>`;
+                }); 
+                h+=`</tbody></table></div>`; 
+            }
         } else { h+=`<div class="text-center py-10 bg-white border rounded-xl text-gray-400">No Data</div>`; }
         document.getElementById('rep-body').innerHTML=h;
     },
@@ -408,7 +326,7 @@ async function startDownload() {
     const zip = new JSZip();
     zip.file("index.html", kpiCode);
     const content = await zip.generateAsync({type:"blob"});
-    saveAs(content, "kpi_system_v8_3.zip");
+    saveAs(content, "kpi_system_v12_final.zip");
     document.getElementById('msg-complete').classList.remove('hidden');
 }
 </script>
