@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Generator Pro For Boots by 4340</title>
+    <title>QR Generator Pro For Boots Th by 4340 (v1.2)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -19,7 +19,8 @@
             --card-bg: #ffffff;
             --text-color: #202124;
             --border-color: #dadce0;
-            --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --hover-shadow: 0 4px 8px rgba(0,0,0,0.15);
             --alert-color: #d93025; 
         }
 
@@ -29,53 +30,70 @@
             --text-color: #e8eaed;
             --border-color: #5f6368;
             --alert-color: #FFD700; 
+            --hover-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
-        body { font-family: 'Noto Sans Thai', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: background-color 0.3s; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 800px; }
+        body { font-family: 'Noto Sans Thai', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 800px; position: relative; }
         
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h1 { font-size: 1.5rem; margin: 0; color: var(--primary-blue); }
+        /* Logo Styling */
+        .header-section { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .logo-container { display: flex; align-items: center; gap: 15px; }
+        .app-logo { height: 50px; width: auto; object-fit: contain; }
+
+        h1 { font-size: 1.4rem; margin: 0; color: var(--primary-blue); display: flex; align-items: center; flex-wrap: wrap; }
+        .version-tag { font-size: 0.8rem; color: #666; margin-left: 10px; border: 1px solid #ccc; padding: 2px 8px; border-radius: 12px; background: rgba(0,0,0,0.05); }
         
         /* Toggle Switch */
-        .theme-switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .theme-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary-blue); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(22px); }
 
-        .card { background-color: var(--card-bg); border-radius: 8px; padding: 2rem; box-shadow: var(--shadow); margin-bottom: 20px; }
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 2rem; box-shadow: var(--shadow); margin-bottom: 20px; transition: background-color 0.3s, box-shadow 0.3s; }
+        
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .required-alert { color: var(--alert-color); font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .required-alert { color: var(--alert-color); font-weight: bold; font-size: 0.9em; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; transition: 0.3s; }
+        input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2); }
 
-        .btn { background-color: var(--primary-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background 0.2s; width: 100%; font-weight: bold; }
-        .btn:hover { filter: brightness(90%); }
-        .btn-download { background-color: var(--primary-green); margin-top: 10px; }
-        .btn:disabled { background-color: gray; cursor: not-allowed; }
+        .btn { background-color: var(--primary-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; width: 100%; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn:hover { filter: brightness(95%); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+        .btn-download { background-color: var(--primary-green); margin-top: 0; width: auto; }
+        .btn-print { background-color: #607d8b; margin-top: 20px; width: auto; display: inline-block; padding: 10px 30px; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; }
 
-        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
-        .qr-item { background: var(--bg-color); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-        .qr-item img { max-width: 100%; height: auto; }
-        .qr-caption { font-size: 12px; margin-top: 5px; }
-
-        /* Setup Section Styles */
-        details.setup-section {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
+        /* Modern Grid for Recent Items */
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; margin-top: 25px; }
+        .qr-item { 
+            background: var(--bg-color); 
+            border: 1px solid var(--border-color); 
+            padding: 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        summary { cursor: pointer; font-weight: bold; color: var(--primary-blue); outline: none; }
-        .setup-content { margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
-        .config-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; text-align: center; }
-        .config-item { flex: 1; min-width: 200px; border: 1px dashed var(--border-color); padding: 10px; border-radius: 8px; }
-        .config-item img { max-width: 100%; height: 80px; object-fit: contain; margin-bottom: 10px; border: 1px solid #ccc; padding: 5px; background: white; }
-        .config-note { font-size: 0.9rem; color: var(--alert-color); margin-bottom: 15px; }
+        .qr-item:hover { transform: translateY(-5px); box-shadow: var(--hover-shadow); border-color: var(--primary-blue); }
+        .qr-item img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px; }
+        .qr-caption { font-size: 13px; font-weight: 500; color: var(--text-color); word-break: break-all; }
+
+        /* Setup Section */
+        details.setup-section { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: var(--shadow); }
+        summary { cursor: pointer; font-weight: bold; color: var(--primary-blue); outline: none; user-select: none; }
+        .setup-content { margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px; text-align: center; }
+        .config-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .config-item { flex: 1; min-width: 200px; border: 2px dashed var(--border-color); padding: 15px; border-radius: 12px; background: rgba(0,0,0,0.02); }
+        .config-item img { max-width: 100%; height: 80px; object-fit: contain; margin-bottom: 10px; background: white; padding: 5px; border-radius: 4px; }
+        .config-note { color: var(--alert-color); font-weight: bold; margin-bottom: 15px; }
 
         #temp-qr { display: none; }
     </style>
@@ -83,35 +101,34 @@
 <body>
 
 <div class="container">
-    <div class="header-top">
-        <h1>QR Generator Pro For Boots by 4340</h1>
+    <div class="header-section">
+        <div class="logo-container">
+            <img src="logo-boots.png" alt="Boots Logo" class="app-logo" onerror="this.style.display='none'">
+            <h1>QR Generator Pro For Boots Th by 4340 <span class="version-tag">v1.2</span></h1>
+        </div>
         <label class="theme-switch">
             <input type="checkbox" id="theme-toggle">
             <span class="slider"></span>
         </label>
     </div>
 
-    <details class="setup-section">
-        <summary>⚙️ วิธีตั้งค่าเครื่องสแกน (ถ้าสแกนแล้ว F2 ไม่ทำงาน)</summary>
+    <details class="setup-section"> 
+        <summary>⚙️ วิธีตั้งค่าเครื่องสแกน (Enable/Disable F2)</summary>
         <div class="setup-content">
-            <p class="config-note">
-                *หากสแกนแล้วตัวเลขขึ้นติดกัน หรือไม่มีการกดปุ่ม F2 ให้ทำตามขั้นตอนด้านล่าง
-            </p>
+            <p class="config-note">ถ้าสแกนแล้วขึ้นข้อความ "จำนวน{F2}รหัสสินค้า" ให้ทำตามขั้นตอนนี้:</p>
             <div class="config-grid">
                 <div class="config-item">
-                    <p><strong>ขั้นตอนที่ 1 (เปิดใช้งาน)</strong></p>
+                    <p><strong>1. เปิดใช้งาน (Enable)</strong></p>
                     <img src="enable-config.png" alt="Scan to Enable F2" onerror="this.style.display='none'; this.parentElement.innerHTML+='<small style=\'color:red\'>ไม่พบไฟล์ภาพ enable-config.png</small>'">
-                    <p>สแกนบาร์โค้ดนี้ 1 ครั้ง<br>เพื่อเปิดฟังก์ชัน "Function Key Mapping"</p>
+                    <p>สแกน 1 ครั้งเพื่อเปิด F2 Mapping</p>
                 </div>
                 <div class="config-item">
-                    <p><strong>ขั้นตอนที่ 2 (ปิดใช้งาน)</strong></p>
+                    <p><strong>2. ปิดใช้งาน (Disable)</strong></p>
                     <img src="disable-config.png" alt="Scan to Disable F2" onerror="this.style.display='none'; this.parentElement.innerHTML+='<small style=\'color:red\'>ไม่พบไฟล์ภาพ disable-config.png</small>'">
-                    <p>สแกนเมื่อต้องการ<br>ยกเลิกการตั้งค่า</p>
+                    <p>สแกนเพื่อยกเลิกการตั้งค่า</p>
                 </div>
             </div>
-            <p style="margin-top:15px; font-size:0.8rem; color:gray;">
-                หมายเหตุ: กรุณาบันทึกไฟล์รูปบาร์โค้ดชื่อ <code>enable-config.png</code> และ <code>disable-config.png</code> ไว้ในโฟลเดอร์เดียวกับโปรแกรมนี้
-            </p>
+            <button class="btn btn-print" onclick="printConfig()">🖨️ สั่งพิมพ์คู่มือ (Print Guide)</button>
         </div>
     </details>
 
@@ -121,17 +138,15 @@
             <input type="number" id="valA" value="1" min="1">
         </div>
         <div class="form-group">
-            <label for="valB">
-                รหัสสินค้า <span class="required-alert">(*จำเป็นต้องใส่)</span>
-            </label>
-            <input type="text" id="valB" placeholder="กรอกรหัสสินค้า...">
+            <label for="valB">รหัสสินค้า <span class="required-alert">(*จำเป็นต้องใส่)</span></label>
+            <input type="text" id="valB" placeholder="กรอกรหัสสินค้าที่นี่...">
         </div>
         <button class="btn" onclick="generateQR()">Generate QR Code</button>
     </div>
 
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Recent QR (<span id="count">0</span>)</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin:0; font-size:1.2rem;">Recent QR (<span id="count">0</span>)</h2>
             <button class="btn btn-download" id="downloadBtn" onclick="downloadPackage()" disabled>Download Zip Package</button>
         </div>
         <div id="recent-list" class="qr-grid"></div>
@@ -142,7 +157,6 @@
 
 <script>
     let qrHistory = [];
-    
     const themeToggle = document.getElementById('theme-toggle');
     const valAInput = document.getElementById('valA');
     const valBInput = document.getElementById('valB');
@@ -150,22 +164,24 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const countSpan = document.getElementById('count');
 
+    // Theme Persistence
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', currentTheme);
+    themeToggle.checked = currentTheme === 'dark';
+
     themeToggle.addEventListener('change', () => {
-        document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+        const theme = themeToggle.checked ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
     });
 
     function generateQR() {
         const valA = valAInput.value || "1";
         const valB = valBInput.value.trim();
 
-        if (!valB) {
-            alert("กรุณาระบุ รหัสสินค้า");
-            valBInput.focus();
-            return;
-        }
+        if (!valB) { alert("กรุณาระบุ รหัสสินค้า"); valBInput.focus(); return; }
 
-        // --- Logic: QTY + ASCII(18) for F2 + ProductCode ---
-        // ASCII 18 (DC2) คือรหัสที่ Scanner จะแปลงเป็นปุ่ม F2 เมื่อเปิด Function Key Mapping
+        // Logic: QTY + F2 (ASCII 18) + ProductCode
         const qrContent = valA + String.fromCharCode(18) + valB; 
         const displayLabel = '"' + valA + '" Qty x "' + valB + '"';
 
@@ -183,19 +199,10 @@
             const canvas = tempContainer.querySelector('canvas');
             if(canvas) {
                 const dataUrl = canvas.toDataURL("image/png");
-                
-                const item = {
-                    id: Date.now(),
-                    valA: valA,
-                    valB: valB,
-                    qrContent: qrContent,
-                    textLabel: displayLabel,
-                    dataUrl: dataUrl
-                };
+                const item = { id: Date.now(), valA, valB, qrContent, textLabel: displayLabel, dataUrl };
                 qrHistory.push(item);
                 renderRecentItem(item);
                 updateUIState();
-
                 valAInput.value = "1";
                 valBInput.value = "";
                 valBInput.focus();
@@ -215,94 +222,104 @@
         downloadBtn.disabled = qrHistory.length === 0;
     }
 
+    function printConfig() {
+        const printWindow = window.open('', '', 'width=900,height=700');
+        const printContent = `
+            <html>
+            <head>
+                <title>คู่มือการตั้งค่าเครื่องสแกน (v1.2)</title>
+                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;700&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Noto Sans Thai', sans-serif; padding: 40px; text-align: center; color: #333; }
+                    .header { font-size: 24px; font-weight: bold; margin-bottom: 30px; color: #4285F4; border-bottom: 2px solid #eee; padding-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 15px; }
+                    .print-logo { height: 50px; width: auto; }
+                    .warning-box { background: #ffebee; color: #c62828; padding: 25px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-bottom: 40px; border: 2px solid #ffcdd2; }
+                    .steps-container { display: flex; justify-content: center; gap: 40px; }
+                    .step-box { width: 40%; border: 3px dashed #ddd; padding: 25px; border-radius: 16px; background: white; }
+                    .step-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #333; }
+                    .step-box img { width: 100%; height: 200px; object-fit: contain; margin-bottom: 15px; border: 1px solid #eee; }
+                    .footer { margin-top: 60px; font-size: 14px; color: #999; }
+                    @media print {
+                        body { padding: 0; margin: 1cm; }
+                        @page { margin: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="logo-boots.png" alt="Boots Logo" class="print-logo" onerror="this.style.display='none'">
+                    คู่มือการตั้งค่าเครื่องสแกน (Scanner Setup Guide)
+                </div>
+                <div class="warning-box">
+                    กรณีสแกนแล้วขึ้นข้อความ "จำนวน{F2}รหัสสินค้า"<br>ให้ทำตามขั้นตอนด้านล่าง
+                </div>
+                <div class="steps-container">
+                    <div class="step-box">
+                        <div class="step-title">1. เปิดใช้งาน (Enable)</div>
+                        <img src="enable-config.png" alt="Enable F2">
+                        <p>สแกนบาร์โค้ดนี้ 1 ครั้ง<br>เพื่อเปิดฟังก์ชัน F2 Key Mapping</p>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-title">2. ปิดใช้งาน (Disable)</div>
+                        <img src="disable-config.png" alt="Disable F2">
+                        <p>สแกนเมื่อต้องการ<br>ยกเลิกการตั้งค่า (Reset)</p>
+                    </div>
+                </div>
+                <div class="footer">QR Generator Pro For Boots Th by 4340 - Version 1.2</div>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+    }
+
     async function downloadPackage() {
         if (qrHistory.length === 0) return;
-
         const zip = new JSZip();
         const imgFolder = zip.folder("images");
-
         qrHistory.forEach((item, index) => {
             const imgData = item.dataUrl.split(',')[1];
-            const filename = "QR_" + (index+1) + ".png";
-            imgFolder.file(filename, imgData, {base64: true});
+            imgFolder.file(`QR_${index+1}.png`, imgData, {base64: true});
         });
 
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('QR Codes', {
-            pageSetup: {
-                paperSize: 9, 
-                orientation: 'portrait',
-                margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 }
-            }
+            pageSetup: { paperSize: 9, orientation: 'portrait', margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } }
         });
-
-        // 6 Columns as requested
-        sheet.columns = [
-            { width: 20 }, { width: 20 }, { width: 20 },
-            { width: 20 }, { width: 20 }, { width: 20 }
-        ];
-
-        // Header Title
+        sheet.columns = [{width:20}, {width:20}, {width:20}, {width:20}, {width:20}, {width:20}];
         sheet.mergeCells('A1:F1');
         const titleCell = sheet.getCell('A1');
         titleCell.value = 'Qr Code Generate By 4340';
         titleCell.font = { name: 'Noto Sans Thai', size: 18, bold: true };
         titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // --- Logic: การเรียงแบบ 6 item ต่อ "ชุด" (Set) ---
-        // 1 Set ใช้พื้นที่ 3 บรรทัด (Text, QR, ว่าง)
-        // เริ่มต้นที่ Row 3
-        
         for (let i = 0; i < qrHistory.length; i++) {
             const item = qrHistory[i];
-
-            // คำนวณตำแหน่ง
-            // 1. หาว่าอยู่ใน Set ที่เท่าไหร่ (0, 1, 2...) -> ทุกๆ 6 ตัวขึ้น Set ใหม่
             const setIndex = Math.floor(i / 6);
-            
-            // 2. หาว่าอยู่ใน Column ไหนของ Set นั้น (0 ถึง 5) -> A ถึง F
             const posInSet = i % 6; 
-            const colIndex = posInSet + 1; // 1=A, 2=B, ..., 6=F
-
-            // 3. คำนวณ Row เริ่มต้นของ Set นี้
-            // Set 0 เริ่มแถว 3, Set 1 เริ่มแถว 6 (3 + 3), Set 2 เริ่มแถว 9
+            const colIndex = posInSet + 1;
             const startRowOfSet = 3 + (setIndex * 3);
-
-            // Row สำหรับ Text = startRowOfSet
-            // Row สำหรับ Image = startRowOfSet + 1
             const textRow = startRowOfSet;
             const imgRow = startRowOfSet + 1;
 
-            // -- ใส่ข้อมูลลง Excel --
-            
-            // 1. ใส่ Text (ValueA Qty x ValueB)
             const labelCell = sheet.getCell(textRow, colIndex);
             labelCell.value = item.textLabel;
             labelCell.alignment = { horizontal: 'center', vertical: 'bottom' };
             labelCell.font = { name: 'Noto Sans Thai', size: 12 };
             
-            // 2. ใส่รูปภาพ
-            const imageId = workbook.addImage({
-                base64: item.dataUrl,
-                extension: 'png',
-            });
-
+            const imageId = workbook.addImage({ base64: item.dataUrl, extension: 'png' });
             sheet.addImage(imageId, {
-                tl: { col: colIndex - 1, row: imgRow - 1 }, // row ต้อง -1 เพราะ ExcelJS นับเริ่ม 0 สำหรับ position แต่เซลล์นับ 1
-                ext: { width: 140, height: 140 }, // ขยายให้เต็ม Cell มากขึ้น
+                tl: { col: colIndex - 1, row: imgRow - 1 },
+                ext: { width: 140, height: 140 },
                 editAs: 'oneCell'
             });
-
-            // จัดความสูงของแถวรูปภาพให้พอดี (ประมาณ 110-120 pixel)
             sheet.getRow(imgRow).height = 110; 
         }
 
         const buffer = await workbook.xlsx.writeBuffer();
         zip.file("QR_Codes_List.xlsx", buffer);
-
-        zip.generateAsync({type:"blob"}).then(function(content) {
-            saveAs(content, "QRCode_Package_4340.zip");
-        });
+        zip.generateAsync({type:"blob"}).then(function(content) { saveAs(content, "QRCode_Package_4340.zip"); });
     }
 </script>
 </body>
