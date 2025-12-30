@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -98,11 +98,11 @@
 
     <div class="card">
         <div class="form-group">
-            <label for="valA">จำนวนที่จะใช้คูณ (QTY) - <i>ระบบจะเติม 0 ให้ครบ 3 หลัก</i></label>
+            <label for="valA">จำนวนที่จะใช้คูณ (QTY) - <i>ระบุจำนวนเต็ม</i></label>
             <input type="number" id="valA" value="1" min="1">
         </div>
         <div class="form-group">
-            <label for="valB">รหัสสินค้า - <i>ระบบจะตัด 3 ตัวหน้าทิ้ง</i> <span class="required-alert">(*จำเป็นต้องใส่)</span></label>
+            <label for="valB">รหัสสินค้า - <i>ระบุรหัส itemcode ตาม POS</i> <span class="required-alert">(*จำเป็นต้องใส่)</span></label>
             <input type="text" id="valB" placeholder="เช่น 885123456...">
         </div>
         <button class="btn" onclick="generateQR()">Generate QR Code</button>
