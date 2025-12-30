@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Generator Pro For Boots Th by 4340 (v1.5)</title>
+    <title>QR Generator Pro For Boots Th by 4340 (v1.6)</title>
     
-    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -22,6 +21,7 @@
             --border-color: #dadce0;
             --shadow: 0 2px 4px rgba(0,0,0,0.1);
             --alert-color: #d93025; 
+            --debug-color: #5f6368;
         }
 
         [data-theme="dark"] {
@@ -30,6 +30,7 @@
             --text-color: #e8eaed;
             --border-color: #5f6368;
             --alert-color: #FFD700; 
+            --debug-color: #9aa0a6;
         }
 
         body { font-family: 'Noto Sans Thai', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -41,24 +42,10 @@
         h1 { font-size: 1.4rem; margin: 0; color: var(--primary-blue); display: flex; align-items: center; flex-wrap: wrap; }
         .version-tag { font-size: 0.8rem; color: #666; margin-left: 10px; border: 1px solid #ccc; padding: 2px 8px; border-radius: 12px; background: rgba(0,0,0,0.05); }
         
-        /* Setup & Diagnostic */
+        /* Setup Section */
         details.setup-section { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: var(--shadow); }
         summary { cursor: pointer; font-weight: bold; color: var(--primary-blue); outline: none; }
         .setup-content { margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
-        
-        /* Diagnostic Box */
-        .diagnostic-box {
-            background-color: #e8f0fe;
-            border: 1px dashed #4285F4;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .diag-text { font-size: 0.9rem; color: #333; }
-        #test-qr { background: white; padding: 5px; border-radius: 4px; }
 
         .card { background-color: var(--card-bg); border-radius: 12px; padding: 2rem; box-shadow: var(--shadow); margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
@@ -76,7 +63,7 @@
         .qr-item { background: var(--bg-color); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; text-align: center; }
         .qr-item img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px; }
         .qr-caption { font-size: 13px; font-weight: 500; word-break: break-all; }
-        .qr-raw-data { font-size: 11px; color: #666; font-family: monospace; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 4px; display: block; margin-top: 5px;}
+        .qr-raw-data { font-size: 11px; color: var(--debug-color); font-family: monospace; background: rgba(0,0,0,0.05); padding: 4px; border-radius: 4px; display: block; margin-top: 5px; }
 
         #temp-qr { display: none; }
     </style>
@@ -87,15 +74,14 @@
     <div class="header-section">
         <div class="logo-container">
             <img src="logo-boots.png" alt="Boots Logo" class="app-logo" onerror="this.style.display='none'">
-            <h1>QR Gen Pro <span class="version-tag">v1.5</span></h1>
+            <h1>QR Gen Pro <span class="version-tag">v1.6</span></h1>
         </div>
     </div>
 
-    <!-- Setup & Diagnostic Section -->
     <details class="setup-section"> 
         <summary>⚙️ เครื่องมือตรวจสอบและตั้งค่า (Tools)</summary>
         <div class="setup-content">
-            <p><strong>1. ตั้งค่า Scanner (ถ้าต้องการใช้ F2)</strong></p>
+            <p><strong>1. ตั้งค่า Scanner (ถ้าต้องการใช้ F2 - ปัจจุบันปิดอยู่)</strong></p>
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <div style="text-align:center; border:1px dashed #ccc; padding:10px; border-radius:8px;">
                     <img src="enable-config.png" style="height:60px;" alt="Enable F2" onerror="this.style.display='none'">
@@ -107,34 +93,21 @@
                 </div>
             </div>
             <button class="btn btn-print" onclick="printConfig()">🖨️ พิมพ์คู่มือ</button>
-
-            <!-- Diagnostic Tool -->
-            <div class="diagnostic-box">
-                <div class="diag-text">
-                    <strong>🔍 ทดสอบสแกนเนอร์:</strong><br>
-                    ลองสแกน QR นี้ดูครับ<br>
-                    - ถ้าได้ <code>!</code> = ปกติ (โค้ดถูกต้อง)<br>
-                    - ถ้าได้ <code>0</code> = แป้นพิมพ์เป็นภาษาไทย หรือ Scanner เพี้ยน
-                </div>
-                <div id="test-qr"></div>
-            </div>
         </div>
     </details>
 
-    <!-- Main Input Section -->
     <div class="card">
         <div class="form-group">
-            <label for="valA">จำนวนที่จะใช้คูณ (QTY)</label>
+            <label for="valA">จำนวนที่จะใช้คูณ (QTY) - <i>ระบบจะเติม 0 ให้ครบ 3 หลัก</i></label>
             <input type="number" id="valA" value="1" min="1">
         </div>
         <div class="form-group">
-            <label for="valB">รหัสสินค้า <span class="required-alert">(*จำเป็นต้องใส่)</span></label>
-            <input type="text" id="valB" placeholder="กรอกรหัสสินค้า...">
+            <label for="valB">รหัสสินค้า - <i>ระบบจะตัด 3 ตัวหน้าทิ้ง</i> <span class="required-alert">(*จำเป็นต้องใส่)</span></label>
+            <input type="text" id="valB" placeholder="เช่น 885123456...">
         </div>
         <button class="btn" onclick="generateQR()">Generate QR Code</button>
     </div>
 
-    <!-- Recent List -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 style="margin:0; font-size:1.2rem;">Recent QR (<span id="count">0</span>)</h2>
@@ -154,27 +127,31 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const countSpan = document.getElementById('count');
 
-    // Create Test QR immediately
-    new QRCode(document.getElementById('test-qr'), {
-        text: "!",
-        width: 80,
-        height: 80,
-        correctLevel: QRCode.CorrectLevel.L
-    });
-
     function generateQR() {
-        const valA = valAInput.value || "1";
-        const valB = valBInput.value.trim();
+        let rawValA = valAInput.value || "1";
+        let rawValB = valBInput.value.trim();
 
-        if (!valB) { alert("กรุณาระบุ รหัสสินค้า"); valBInput.focus(); return; }
+        if (!rawValB) { alert("กรุณาระบุ รหัสสินค้า"); valBInput.focus(); return; }
+        if (rawValB.length < 4) {
+             // แจ้งเตือนกรณีรหัสสินค้าสั้นเกินกว่าจะตัด 3 ตัว
+             if(!confirm("รหัสสินค้าสั้นกว่า 4 หลัก ระบบจะไม่สามารถตัด 3 ตัวหน้าได้\nต้องการใช้ค่าเดิม '" + rawValB + "' หรือไม่?")) return;
+        }
 
-        // --- STRICT FIX v1.5 ---
-        // ใช้ Array join เพื่อความชัวร์ 100% ว่าไม่มีการบวกเลข
-        // String.fromCharCode(33) คือ "!"
-        const parts = [valA, valB];
-        const qrContent = parts.join(String.fromCharCode(33)); 
+        // --- Logic v1.6 ---
         
-        const displayLabel = '"' + valA + '" Qty x "' + valB + '"';
+        // 1. Process ValA: Pad Start with '0' to length 3
+        // "1" -> "001", "12" -> "012", "123" -> "123"
+        let processedA = rawValA.toString().padStart(3, '0');
+
+        // 2. Process ValB: Substring from index 3 (4th char) onwards
+        // "885123456" -> "123456"
+        let processedB = rawValB.length > 3 ? rawValB.substring(3) : rawValB;
+
+        // 3. Concatenate without separator
+        const qrContent = processedA + processedB; 
+        
+        // Display Label (Show original input for user reference)
+        const displayLabel = '"' + rawValA + '" Qty x "' + rawValB + '"';
 
         const tempContainer = document.getElementById('temp-qr');
         tempContainer.innerHTML = ''; 
@@ -190,10 +167,12 @@
             const canvas = tempContainer.querySelector('canvas');
             if(canvas) {
                 const dataUrl = canvas.toDataURL("image/png");
-                const item = { id: Date.now(), valA, valB, qrContent, textLabel: displayLabel, dataUrl };
+                const item = { id: Date.now(), valA: rawValA, valB: rawValB, qrContent, textLabel: displayLabel, dataUrl };
                 qrHistory.push(item);
                 renderRecentItem(item);
                 updateUIState();
+                
+                // Clear inputs for next item
                 valAInput.value = "1";
                 valBInput.value = "";
                 valBInput.focus();
@@ -204,11 +183,10 @@
     function renderRecentItem(item) {
         const div = document.createElement('div');
         div.className = 'qr-item';
-        // แสดง Raw Data ใต้รูปเพื่อให้ user ตรวจสอบได้ว่า Code ไม่ผิด
         div.innerHTML = `
             <img src="${item.dataUrl}" alt="QR Code">
             <div class="qr-caption">${item.textLabel}</div>
-            <code class="qr-raw-data">${item.qrContent}</code>
+            <div class="qr-raw-data" title="ข้อมูลที่สแกนได้">Data: ${item.qrContent}</div>
         `;
         recentList.prepend(div);
     }
@@ -237,7 +215,7 @@
             <body>
                 <div class="header">
                     <img src="logo-boots.png" class="print-logo" onerror="this.style.display='none'">
-                    Scanner Setup Guide (F2 Mode)
+                    Scanner Setup Guide
                 </div>
                 <div class="step-box">
                     <h3>1. Enable F2</h3>
@@ -247,7 +225,7 @@
                     <h3>2. Disable (Reset)</h3>
                     <img src="disable-config.png" alt="Disable">
                 </div>
-                <div style="margin-top:20px; color:gray;">QR Generator Pro For Boots Th by 4340 (v1.5)</div>
+                <div style="margin-top:20px; color:gray;">QR Generator Pro For Boots Th by 4340 (v1.6)</div>
             </body>
             </html>
         `;
